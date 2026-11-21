@@ -1,4 +1,4 @@
-/* fit+ — video YouTube incorporati (player ufficiale). id = codice del video, ch = canale */
+/* starfit+ — video YouTube incorporati (player ufficiale). id = codice del video, ch = canale */
 window.FitVideos = {
   m9090: { id: "6o1DGr9oLL4", ch: "Mi Riabilito", it: true },
   couch: { id: "d9pOjXCKGN8", ch: "Tom Morrison" },

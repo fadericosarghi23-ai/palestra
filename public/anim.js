@@ -1,4 +1,4 @@
-/* fit+ — motore delle animazioni (omini stilizzati) e libreria pose.
+/* starfit+ — motore delle animazioni (omini stilizzati) e libreria pose.
    Coordinate: viewBox 0 0 240 220, pavimento a y=200, la figura guarda verso destra.
    Angoli in gradi: 0 = verso il basso, 90 = avanti (destra), 180 = verso l'alto, -90 = indietro. */
 (function (root) {

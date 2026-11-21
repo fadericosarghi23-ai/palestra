@@ -1,4 +1,4 @@
-/* fit+ — timer di recupero (conto alla rovescia) e cronometro */
+/* starfit+ — timer di recupero (conto alla rovescia) e cronometro */
 (function () {
   const bar = document.createElement('div');
   bar.className = 'timer';

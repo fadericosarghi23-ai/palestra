@@ -1,4 +1,4 @@
-# fit+
+# starfit+
 
 Scheda di allenamento per terzino (1,85 m · 85 kg): 3 sedute in palestra, 2 in campo, attivazione il giorno prima della partita e mobilità ogni giorno. Dal 23 novembre 2026 al 14 febbraio 2027.
 

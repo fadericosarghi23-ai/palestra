@@ -1,4 +1,4 @@
-# fit+: sito statico, nessuna build.
+# starfit+: sito statico, nessuna build.
 [build]
   publish = "public"
   command = ""

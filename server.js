@@ -1,4 +1,4 @@
-// Server locale per fit+: node server.js
+// Server locale per starfit+: node server.js
 // Sul PC:       http://localhost:8080
 // Sul telefono: http://<indirizzo del PC in rete>:8080 (stessa rete Wi-Fi), l'indirizzo viene stampato all'avvio
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
@@ -20,7 +20,7 @@ http.createServer((req, res) => {
     res.end(data);
   });
 }).listen(port, '0.0.0.0', () => {
-  console.log('fit+ è acceso.');
+  console.log('starfit+ è acceso.');
   console.log('  Sul PC:       http://localhost:' + port);
   const ips = Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal).map(i => i.address);
   ips.forEach(ip => console.log('  Sul telefono: http://' + ip + ':' + port + '   (stessa rete Wi-Fi del PC)'));

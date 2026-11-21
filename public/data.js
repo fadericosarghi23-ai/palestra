@@ -1,4 +1,4 @@
-/* fit+ — contenuti: esercizi e settimana */
+/* starfit+ — contenuti: esercizi e settimana */
 window.FitData = (function () {
   const EX = {
     // ===== Mobilità =====

@@ -1,4 +1,4 @@
-/* fit+ — interfaccia */
+/* starfit+ — interfaccia */
 (function () {
   const { ANIM, evaluate, prepare, mid } = window.FitAnim;
   const { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS } = window.FitData;
@@ -302,7 +302,7 @@
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
       <div><p class="eyebrow">Scheda settimanale · Terzino</p>
-        <h1 class="brandname">fit<span>+</span></h1>
+        <h1 class="brandname">starfit<span>+</span></h1>
         <p class="lede">Tre sedute in palestra, due in campo con la squadra, attivazione il giorno prima della partita e mobilità ogni giorno. Obiettivo: più veloce, più asciutto, più solido nei contrasti.</p>
         <div class="stats"><div class="stat"><b>1,85 m</b><span>Altezza</span></div><div class="stat"><b>85 kg</b><span>Oggi</span></div><div class="stat hot"><b>80–82 kg</b><span>Obiettivo</span></div><div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
       </div>
@@ -317,7 +317,7 @@
     if (!isIOS() || isStandalone() || store.get('install-ok', false)) return '';
     const share = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Condividi"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
     return `<section class="sec install" id="install"><b>Installa l'app sull'iPhone</b>
-      <ol><li>Tocca ${share} <span>Condividi</span> nella barra di Safari</li><li>Scegli <span>Aggiungi alla schermata Home</span></li><li>Apri fit+ dall'icona: si avvia a tutto schermo su Oggi</li></ol>
+      <ol><li>Tocca ${share} <span>Condividi</span> nella barra di Safari</li><li>Scegli <span>Aggiungi alla schermata Home</span></li><li>Apri starfit+ dall'icona: si avvia a tutto schermo su Oggi</li></ol>
       <button type="button" class="btn-ghost" id="install-ok">Ho capito</button></section>`;
   }
 
