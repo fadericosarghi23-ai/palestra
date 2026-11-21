@@ -1,7 +1,7 @@
-/* Progetto Missile — interfaccia */
+/* fit+ — interfaccia */
 (function () {
-  const { ANIM, evaluate, prepare, mid } = window.MissileAnim;
-  const { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS } = window.MissileData;
+  const { ANIM, evaluate, prepare, mid } = window.FitAnim;
+  const { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS } = window.FitData;
   const NS = 'http://www.w3.org/2000/svg';
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -171,7 +171,7 @@
 
   /* ---------- componenti ---------- */
   const TYPE_CHIP = { gym: 'gym', field: 'field', act: 'act', match: 'match' };
-  const VIDEOS = window.MissileVideos || {};
+  const VIDEOS = window.FitVideos || {};
   let mediaMode = store.get('media', 'video');
   const ytUrl = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
@@ -218,7 +218,7 @@
   function onSetBar(btn) {
     const sb = btn.closest('.setbar'), act = btn.dataset.act, key = sb.dataset.key;
     const sets = +sb.dataset.sets, rest = +sb.dataset.rest, name = sb.dataset.name;
-    const T = window.MissileTimer;
+    const T = window.FitTimer;
     buzz();
     if (act === 'hold') return T.countdown(+btn.dataset.sec, name, 'hold');
     if (act === 'rest') return T.countdown(rest, name, 'rest');
@@ -282,7 +282,7 @@
     const left = Math.round((END - t) / DAY), toStart = Math.round((START - t) / DAY);
     const status = cw === 0 ? `Si parte <b>lunedì ${fmt(START, { day: 'numeric', month: 'long' })}</b>: ${toStart === 1 ? 'manca 1 giorno' : 'mancano ' + toStart + ' giorni'}.`
       : cw <= WEEKS ? `Sei alla <b>settimana ${cw} di ${WEEKS}</b>: ${left === 0 ? 'oggi è il traguardo' : 'mancano ' + left + ' giorni al traguardo'}.`
-        : `<b>Progetto completato.</b> Fai i test finali e imposta il prossimo blocco.`;
+        : `<b>Programma completato.</b> Fai i test finali e imposta il prossimo blocco.`;
     const cells = Array.from({ length: WEEKS }, (_, i) => {
       const n = i + 1, a = weekStart(n), b = new Date(a.getTime() + 6 * DAY);
       const tags = [];
@@ -302,7 +302,7 @@
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
       <div><p class="eyebrow">Scheda settimanale · Terzino</p>
-        <h1>Progetto <span>Missile</span></h1>
+        <h1 class="brandname">fit<span>+</span></h1>
         <p class="lede">Tre sedute in palestra, due in campo con la squadra, attivazione il giorno prima della partita e mobilità ogni giorno. Obiettivo: più veloce, più asciutto, più solido nei contrasti.</p>
         <div class="stats"><div class="stat"><b>1,85 m</b><span>Altezza</span></div><div class="stat"><b>85 kg</b><span>Oggi</span></div><div class="stat hot"><b>80–82 kg</b><span>Obiettivo</span></div><div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
       </div>
@@ -317,13 +317,13 @@
     if (!isIOS() || isStandalone() || store.get('install-ok', false)) return '';
     const share = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Condividi"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
     return `<section class="sec install" id="install"><b>Installa l'app sull'iPhone</b>
-      <ol><li>Tocca ${share} <span>Condividi</span> nella barra di Safari</li><li>Scegli <span>Aggiungi alla schermata Home</span></li><li>Apri Progetto Missile dall'icona: si avvia a tutto schermo su Oggi</li></ol>
+      <ol><li>Tocca ${share} <span>Condividi</span> nella barra di Safari</li><li>Scegli <span>Aggiungi alla schermata Home</span></li><li>Apri fit+ dall'icona: si avvia a tutto schermo su Oggi</li></ol>
       <button type="button" class="btn-ghost" id="install-ok">Ho capito</button></section>`;
   }
 
   function todayHTML() {
     const d = DAYS.find(x => x.id === TODAY_ID()), pr = dayProgress(d), cw = currentWeek();
-    const when = cw === 0 ? `Si parte lunedì ${fmt(START, { day: 'numeric', month: 'long' })} · intanto prova la scheda` : cw <= WEEKS ? `Settimana ${cw} di ${WEEKS}${cw % 4 === 0 ? ' · scarico' : ''}` : 'Progetto completato';
+    const when = cw === 0 ? `Si parte lunedì ${fmt(START, { day: 'numeric', month: 'long' })} · intanto prova la scheda` : cw <= WEEKS ? `Settimana ${cw} di ${WEEKS}${cw % 4 === 0 ? ' · scarico' : ''}` : 'Programma completato';
     const cta = d.type === 'gym' || d.type === 'act' ? 'Inizia l\'allenamento' : 'Vedi i consigli';
     return `<a class="today-card" href="#${d.id}">
       <span class="tc-top"><span class="tc-k">Oggi · ${d.d}</span><span class="md">${d.md}</span></span>
@@ -511,7 +511,7 @@
   document.addEventListener('click', e => {
     const sbb = e.target.closest('.setbar button');
     if (sbb) onSetBar(sbb);
-    if (e.target.closest('#sw-open, .bnav-timer')) { buzz(); window.MissileTimer.picker(); }
+    if (e.target.closest('#sw-open, .bnav-timer')) { buzz(); window.FitTimer.picker(); }
     const sw = e.target.closest('.media-sw button');
     if (sw) {
       const box = sw.closest('.anim'), mode = sw.dataset.mode;

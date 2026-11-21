@@ -1,5 +1,5 @@
-/* Progetto Missile — contenuti: esercizi e settimana */
-window.MissileData = (function () {
+/* fit+ — contenuti: esercizi e settimana */
+window.FitData = (function () {
   const EX = {
     // ===== Mobilità =====
     m9090: { name: "90/90 per le anche", cat: "Mobilità", view: "frontale", mus: ["Anche", "Glutei", "Rotatori"],

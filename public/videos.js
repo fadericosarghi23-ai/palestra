@@ -1,5 +1,5 @@
-/* Progetto Missile — video YouTube incorporati (player ufficiale). id = codice del video, ch = canale */
-window.MissileVideos = {
+/* fit+ — video YouTube incorporati (player ufficiale). id = codice del video, ch = canale */
+window.FitVideos = {
   m9090: { id: "6o1DGr9oLL4", ch: "Mi Riabilito", it: true },
   couch: { id: "d9pOjXCKGN8", ch: "Tom Morrison" },
   hipcars: { id: "9hmX3xwrUh0", ch: "Physiofitness Physical Therapy" },

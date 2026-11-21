@@ -1,4 +1,4 @@
-/* Progetto Missile — timer di recupero (conto alla rovescia) e cronometro */
+/* fit+ — timer di recupero (conto alla rovescia) e cronometro */
 (function () {
   const bar = document.createElement('div');
   bar.className = 'timer';
@@ -161,5 +161,5 @@
   });
   document.addEventListener('visibilitychange', () => { if (!bar.hidden && document.visibilityState === 'visible') keepAwake(true).then(render); });
 
-  window.MissileTimer = { countdown, stopwatch, picker, close };
+  window.FitTimer = { countdown, stopwatch, picker, close };
 })();

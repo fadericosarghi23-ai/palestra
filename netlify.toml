@@ -1,4 +1,4 @@
-# Progetto Missile: sito statico, nessuna build.
+# fit+: sito statico, nessuna build.
 [build]
   publish = "public"
   command = ""

@@ -1,4 +1,4 @@
-/* Progetto Missile — motore delle animazioni (omini stilizzati) e libreria pose.
+/* fit+ — motore delle animazioni (omini stilizzati) e libreria pose.
    Coordinate: viewBox 0 0 240 220, pavimento a y=200, la figura guarda verso destra.
    Angoli in gradi: 0 = verso il basso, 90 = avanti (destra), 180 = verso l'alto, -90 = indietro. */
 (function (root) {
@@ -344,5 +344,5 @@
     a(-143, [-5, -5], [-5, -5], foamL, foamL, 'hip', [110, 182], { h: -150, hold: 0.2, d: 1.6 }),
     a(-143, [-28, -28], [-28, -28], foamL, foamL, 'hip', [135, 182], { h: -150, hold: 0.2, d: 1.6 })] };
 
-  root.MissileAnim = { ANIM, evaluate, prepare, mid, lerp2 };
+  root.FitAnim = { ANIM, evaluate, prepare, mid, lerp2 };
 })(typeof window !== 'undefined' ? window : globalThis);

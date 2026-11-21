@@ -1,9 +1,9 @@
-/* Progetto Missile — service worker: l'app funziona anche senza rete.
+/* fit+ — service worker: l'app funziona anche senza rete.
    Attivo solo su HTTPS (o localhost): su http://192.168... il browser non lo avvia. */
-const VERSION = 'pm-v1';
+const VERSION = 'fit-v2';
 const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './app.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
-const RUNTIME = 'pm-runtime-v1';
+const RUNTIME = 'fit-runtime-v1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
