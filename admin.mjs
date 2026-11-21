@@ -24,7 +24,9 @@ const [cmd, rawName] = args;
 const name = (rawName || '').trim().toLowerCase();
 
 const say = s => process.stdout.write(s + '\n');
-const fail = s => { process.stderr.write('✖ ' + s + '\n'); process.exit(1); };
+// Niente process.exit: su Windows interrompere mentre la rete chiude le connessioni dà un errore di Node
+class Stop extends Error {}
+const fail = s => { process.stderr.write('✖ ' + s + '\n'); throw new Stop(s); };
 
 function key() {
   if (process.env.STARFIT_ADMIN_KEY) return process.env.STARFIT_ADMIN_KEY.trim();
@@ -47,7 +49,7 @@ async function call(p, body) {
       headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key() },
       body: body ? JSON.stringify(body) : undefined
     });
-  } catch (e) { fail('Non riesco a raggiungere ' + site + '. Se è il server locale, avvialo con: node server.js'); }
+  } catch (e) { if (e instanceof Stop) throw e; fail('Non riesco a raggiungere ' + site + '. Se è il server locale, avvialo con: node server.js'); }
   let j = {};
   try { j = await r.json(); } catch (e) { /* niente */ }
   if (!r.ok) fail(j.error || ('Errore ' + r.status + ' da ' + site));
@@ -62,6 +64,7 @@ async function newPassword() {
   return a;
 }
 
+async function main() {
 if (!key()) fail('Manca la chiave segreta: crea il file admin.key oppure imposta STARFIT_ADMIN_KEY.');
 say('starfit+ · ' + site);
 
@@ -85,3 +88,5 @@ if (cmd === 'elenco') {
 } else {
   say('Comandi:\n  node admin.mjs elenco\n  node admin.mjs crea <nome>\n  node admin.mjs password <nome>\n  node admin.mjs elimina <nome>\nAggiungi --sito https://tuosito.netlify.app per il sito online.');
 }
+}
+main().catch(e => { if (!(e instanceof Stop)) process.stderr.write('✖ ' + (e && e.message || e) + '\n'); process.exitCode = 1; });
