@@ -19,7 +19,7 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 - calendario di 12 settimane con settimane di scarico e test
 - partita la domenica o il sabato (scheda terzino): la settimana si riorganizza da sola
 - diario del peso giornaliero con grafico
-- diario del cibo: alimenti comuni con stima di calorie e macro, anche dall'etichetta
+- diario del cibo: alimenti comuni con stima di calorie e macro, anche dall'etichetta, e consigli su cosa mangiare per completare la giornata
 - registro dei test, alimentazione e regole
 
 Scheda modificata, serie fatte, peso, cibo, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.

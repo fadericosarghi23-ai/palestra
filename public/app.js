@@ -417,6 +417,71 @@ window.FitAccount.whenReady(function () {
       ${macroBar('Proteine', t.p, MAC.p, 'g')}${macroBar('Carboidrati', t.c, MAC.c, 'g')}${macroBar('Grassi', t.f, MAC.f, 'g')}
       <p class="f-msg">${msg}</p></section>`;
   }
+  /* Consigli: cosa mangiare per avvicinarsi agli obiettivi, in base al pasto dell'ora */
+  const SUG = {
+    col: { p: ['Yogurt greco 0%', 'Skyr', 'Proteine in polvere (whey)', 'Fiocchi di latte', 'Albume'], c: ["Fiocchi d'avena", 'Pane integrale', 'Banana', 'Fette biscottate'], f: ["Burro d'arachidi", 'Mandorle', 'Noci'] },
+    pra: { p: ['Petto di pollo (cotto)', 'Tonno al naturale (sgocciolato)', 'Merluzzo o nasello', 'Uovo', 'Lenticchie (cotte)', 'Bresaola'], c: ['Riso (crudo)', 'Pasta (cruda)', 'Patate (lesse o al forno senza olio)', 'Pane comune', 'Quinoa (cotta)'], f: ["Olio extravergine d'oliva", 'Avocado', 'Parmigiano o grana'] },
+    spu: { p: ['Yogurt greco 0%', 'Skyr', 'Bresaola', 'Fiocchi di latte', 'Barretta proteica'], c: ['Banana', 'Gallette di riso', 'Mela', 'Pane comune'], f: ['Mandorle', 'Noci', 'Cioccolato fondente 70%'] },
+    cen: { p: ['Petto di pollo (cotto)', 'Merluzzo o nasello', 'Petto di tacchino (crudo)', 'Uovo', 'Tonno al naturale (sgocciolato)', 'Salmone fresco'], c: ['Riso (crudo)', 'Patate (lesse o al forno senza olio)', 'Pasta (cruda)', 'Pane comune', 'Farro (cotto)'], f: ["Olio extravergine d'oliva", 'Avocado', 'Noci'] }
+  };
+  const CAP = { p: { col: 30, spu: 25, pra: 40, cen: 40 }, c: { col: 60, spu: 35, pra: 90, cen: 80 }, f: { col: 15, spu: 15, pra: 15, cen: 15 } };
+  const UNIT = /^1 (uovo|albume|barretta|banana|mela|misurino|galletta|fetta|vasetto)/;
+  let sugShift = 0;
+  const mealNow = () => { const hr = new Date().getHours() + new Date().getMinutes() / 60; return hr < 10.5 ? 'col' : hr < 15 ? 'pra' : hr < 18.5 ? 'spu' : 'cen'; };
+  const byName = n => window.FitFood.FOODS.find(f => f.n === n);
+  function sizeFor(fd, need, key, rk) {
+    let g = need / fd[key] * 100;
+    if (rk != null && fd.k * g / 100 > rk + 60) g = Math.max(0, (rk + 60) / fd.k * 100); // non sforare troppo le calorie
+    g = Math.min(g, fd.g * 2.5);
+    if (UNIT.test(fd.u)) { const n = Math.min(4, Math.round(g / fd.g)); return n >= 1 ? { g: n * fd.g, lbl: n + ' × ' + fd.u.slice(2) } : null; }
+    if (g < fd.g * 0.5) return null;
+    g = g >= 100 ? Math.round(g / 10) * 10 : Math.round(g / 5) * 5;
+    return { g, lbl: g + ' g' };
+  }
+  function foodSuggest(t) {
+    const meal = mealNow(), pool = SUG[meal], eaten = new Set(dayFood(dkey(new Date())).map(e => e.n));
+    const r = { k: MAC.kcal[0] - t.k, p: MAC.p[0] - t.p, c: MAC.c[0] - t.c, f: MAC.f[0] - t.f };
+    const out = [];
+    const pick = (key, min) => {
+      if (r[key] < min || r.k < 80) return;
+      const list = pool[key], n = list.length;
+      for (let i = 0; i < n; i++) {
+        const fd = byName(list[(i + sugShift) % n]);
+        if (!fd || eaten.has(fd.n) || out.some(o => o.fd === fd)) continue;
+        const sz = sizeFor(fd, Math.min(r[key], CAP[key][meal]), key, r.k);
+        if (!sz) continue;
+        const v = forGrams(fd, sz.g); out.push({ fd, sz, v, key });
+        r.k -= v.k; r.p -= v.p; r.c -= v.c; r.f -= v.f; return;
+      }
+    };
+    pick('p', 12); pick('c', 20); pick('f', 8);
+    if (!out.length) pick('p', 6);
+    return { meal, out, r };
+  }
+  function foodSuggestHTML(t) {
+    const gap = { k: MAC.kcal[0] - t.k, p: MAC.p[0] - t.p, c: MAC.c[0] - t.c, f: MAC.f[0] - t.f };
+    const mealLbl = MEALS.find(m => m[0] === mealNow())[1].toLowerCase();
+    if (t.k > MAC.kcal[1]) return `<section class="panel f-sug"><h3>Consigli</h3><p class="small">Per oggi le calorie bastano. Se hai ancora fame scegli verdura, insalata o un caffè; domani riparti dagli obiettivi.${gap.p > 10 ? ' Le proteine mancanti le recuperi domani: non serve forzare.' : ''}</p></section>`;
+    if (gap.p <= 5 && gap.c <= 10 && gap.f <= 5) return `<section class="panel f-sug"><h3>Consigli</h3><p class="small">Obiettivi di oggi raggiunti: proteine, carboidrati e grassi sono a posto. 💪</p></section>`;
+    const { out } = foodSuggest(t);
+    const need = [gap.p > 5 ? `<b>${n0(gap.p)} g</b> di proteine` : '', gap.c > 10 ? `<b>${n0(gap.c)} g</b> di carboidrati` : '', gap.f > 5 ? `<b>${n0(gap.f)} g</b> di grassi` : ''].filter(Boolean);
+    const why = { p: 'Proteine', c: 'Carboidrati', f: 'Grassi' };
+    return `<section class="panel f-sug" id="f-sug"><div class="f-mh"><h3>Cosa mangiare adesso</h3><span>idee per ${mealLbl}</span></div>
+      <p class="small">Ti mancano ${need.join(', ').replace(/, ([^,]*)$/, ' e $1')} (circa ${n0(Math.max(0, gap.k))} kcal).</p>
+      ${out.length ? `<ul class="f-sl">${out.map(o => `<li><span class="f-n"><b>${esc(o.fd.n)}</b><small><i class="f-tag ${o.key}">${why[o.key]}</i> ${esc(o.sz.lbl)} · ${n0(o.v.k)} kcal · P ${n1(o.v.p)} · C ${n1(o.v.c)} · G ${n1(o.v.f)}</small></span>
+        <button type="button" class="sb-btn" data-fsug="${esc(o.fd.id)}|${o.sz.g}" aria-label="Aggiungi ${esc(o.fd.n)} a ${mealLbl}">+ Aggiungi</button></li>`).join('')}</ul>` : '<p class="small">Ti manca poco: uno spuntino leggero basta.</p>'}
+      ${nextMealHint(foodSuggest(t).r)}
+      <div class="f-act"><button type="button" class="btn-ghost" data-fx="more">Altre idee</button></div>
+    </section>`;
+  }
+  // Se dopo i consigli manca ancora tanto, un'idea per il pasto successivo
+  function nextMealHint(r) {
+    const next = { col: 'il pranzo', pra: 'la cena', spu: 'la cena', cen: '' }[mealNow()];
+    if (!next || r.k < 450) return '';
+    const P = byName(mealNow() === 'col' ? 'Petto di pollo (cotto)' : 'Merluzzo o nasello'), C = byName(mealNow() === 'col' ? 'Pasta (cruda)' : 'Riso (crudo)'), O = byName("Olio extravergine d'oliva");
+    const gp = Math.min(250, Math.max(100, Math.round(Math.min(r.p, 45) / P.p * 10) * 10)), gc = Math.min(130, Math.max(60, Math.round(Math.min(r.c, 100) / C.c * 10) * 10));
+    return `<p class="small f-next">Per ${next} punta su qualcosa come <b>${gp} g di ${P.n.toLowerCase().replace(/ \(.*\)/, '')}</b>, <b>${gc} g di ${C.n.toLowerCase().replace(/ \(.*\)/, '')}</b>, verdura e 1 cucchiaio d'olio: circa ${n0(forGrams(P, gp).k + forGrams(C, gc).k + O.k * 0.1)} kcal.</p>`;
+  }
   function foodResults() {
     const q = fold(foodQ.trim()), rec = store.get('food-recent', []);
     let list;
@@ -461,6 +526,7 @@ window.FitAccount.whenReady(function () {
         <p class="big">Cibo</p><p class="sub">Cosa hai mangiato e i macro della giornata</p></div></div>
       <nav class="f-days" aria-label="Giorno"><button type="button" data-fday="-1" aria-label="Giorno prima">←</button><b>${dayLbl}</b><button type="button" data-fday="1" aria-label="Giorno dopo"${isToday ? ' disabled' : ''}>→</button></nav>
       ${foodTotalsHTML(t)}
+      ${isToday ? foodSuggestHTML(t) : ''}
       <div class="f-meals">${meals}</div>
       <p class="small f-note">Le calorie e i macro sono stime fatte con valori medi per 100 g. Per un prodotto confezionato è più preciso crearlo dall'etichetta. Obiettivi della tua scheda: ${n0(MAC.kcal[0])}–${n0(MAC.kcal[1])} kcal e ${n0(MAC.p[0])}–${n0(MAC.p[1])} g di proteine al giorno.</p>`;
   }
@@ -468,9 +534,20 @@ window.FitAccount.whenReady(function () {
   function onFoodClick(e) {
     const t = e.target;
     const add = t.closest('[data-fadd]'); if (add) { foodAdd = add.dataset.fadd; foodPick = null; foodQ = ''; foodNew = false; route(true); const q = document.getElementById('f-q'); if (q) q.focus({ preventScroll: true }); document.getElementById('meal-' + foodAdd).scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' }); return true; }
+    const sg = t.closest('[data-fsug]');
+    if (sg) {
+      const [id, g] = sg.dataset.fsug.split('|'), fd = foodById(id), meal = mealNow(), today = dkey(new Date());
+      if (fd && +g > 0) {
+        const list = dayFood(today).slice();
+        list.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), m: meal, n: fd.n, g: +g }, forGrams(fd, +g)));
+        setDayFood(today, list); buzz(); route(true);
+        const box = document.getElementById('meal-' + meal); if (box) { box.classList.remove('saved'); void box.offsetWidth; box.classList.add('saved'); }
+      }
+      return true;
+    }
     const pk = t.closest('[data-fpick]'); if (pk) { foodPick = pk.dataset.fpick; route(true); return true; }
     const fx = t.closest('[data-fx]');
-    if (fx) { const a = fx.dataset.fx; if (a === 'close') { foodAdd = null; foodPick = null; foodNew = false; } if (a === 'back') { foodPick = null; foodNew = false; } if (a === 'new') foodNew = true; route(true); return true; }
+    if (fx) { const a = fx.dataset.fx; if (a === 'close') { foodAdd = null; foodPick = null; foodNew = false; } if (a === 'back') { foodPick = null; foodNew = false; } if (a === 'new') foodNew = true; if (a === 'more') { sugShift++; buzz(); } route(true); return true; }
     const fg = t.closest('[data-fg]'); if (fg) { const i = document.getElementById('f-g'); i.value = fg.dataset.fg; updateFoodPrev(); buzz(); return true; }
     if (t.closest('#f-ok')) {
       const fd = foodById(foodPick), g = foodGrams();
