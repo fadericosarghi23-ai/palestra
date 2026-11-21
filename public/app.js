@@ -10,16 +10,19 @@ window.FitAccount.whenReady(function () {
   const store = window.FitAccount.store;
 
   /* Programma dell'account: lo sceglie chi crea l'account (admin.mjs crea <nome> --programma <id>) */
-  const PROG = PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
+  const PROG0 = PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
+  /* Giorno della partita (solo per i programmi che lo prevedono): cambia tutta la settimana */
+  const MATCHDAY = PROG0.layouts ? (PROG0.layouts[store.get('matchday', 'dom')] ? store.get('matchday', 'dom') : 'dom') : null;
+  const PROG = Object.assign({}, PROG0, MATCHDAY ? PROG0.layouts[MATCHDAY] : {});
   const MOB = PROG.mob, DAYS_SRC = PROG.days;
   const foot = document.querySelector('footer .wrap'); if (foot) foot.textContent = PROG.footer;
 
   /* Scheda: quella di base, con le modifiche fatte dall'utente per ogni giorno.
      Ogni esercizio ha un uid stabile: serve per ricordare serie e "Fatto". */
-  const BASE_DAYS = DAYS_SRC.map(d => Object.assign({}, d, { items: (d.items || []).map((it, i) => Object.assign({ uid: d.id + ':' + i }, it)) }));
+  const BASE_DAYS = DAYS_SRC.map(d => { const pk = d.pk || d.id; return Object.assign({}, d, { pk, items: (d.items || []).map((it, i) => Object.assign({ uid: pk + ':' + i }, it)) }); });
   function days() {
     const plan = store.get('plan', {});
-    return BASE_DAYS.map(d => plan[d.id] ? Object.assign({}, d, { items: plan[d.id], custom: true }) : d);
+    return BASE_DAYS.map(d => plan[d.pk] ? Object.assign({}, d, { items: plan[d.pk], custom: true }) : d);
   }
   const dayById = id => days().find(d => d.id === id);
   function findItem(uid) { for (const d of days()) for (const it of d.items) if (it.uid === uid) return it; return null; }
@@ -322,15 +325,196 @@ window.FitAccount.whenReady(function () {
       <p class="small">${esc(PROG.calNote)}</p></section>`;
   }
 
+  /* ---------- diario del peso: un valore per giorno, salvato nell'account ---------- */
+  const pad2 = n => String(n).padStart(2, '0');
+  const dkey = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  const kdate = k => { const [y, m, g] = k.split('-').map(Number); return new Date(y, m - 1, g); };
+  const kg = n => n.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const parseKg = v => { const n = parseFloat(String(v || '').replace(',', '.').replace(/[^0-9.]/g, '')); return isFinite(n) && n >= 25 && n <= 250 ? Math.round(n * 10) / 10 : null; };
+  const weights = () => store.get('weights', {});
+  const wList = () => Object.entries(weights()).filter(x => typeof x[1] === 'number' && isFinite(x[1])).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const lastWeight = () => { const l = wList(); return l[l.length - 1] || null; };
+  function setWeight(k, v) { const w = Object.assign({}, weights()); if (v == null) delete w[k]; else w[k] = v; store.set('weights', w); }
+  const sign = n => (n > 0.04 ? '+' : n < -0.04 ? '−' : '±') + kg(Math.abs(n)) + ' kg';
+  function wDiffs() {
+    const l = wList(); if (!l.length) return [];
+    const last = l[l.length - 1], out = [];
+    const lim = dkey(new Date(kdate(last[0]).getTime() - 7 * DAY));
+    const wk = l.filter(x => x[0] <= lim).pop();
+    if (wk) out.push([sign(last[1] - wk[1]), 'in 7 giorni']);
+    if (l.length > 1 && l[0] !== wk) out.push([sign(last[1] - l[0][1]), 'dal ' + fmt(kdate(l[0][0]))]);
+    return out;
+  }
+  function wChart(l) {
+    if (l.length < 2) return '';
+    const W = 320, H = 90, P = 8, vs = l.map(x => x[1]), lo = Math.min(...vs), hi = Math.max(...vs), r = Math.max(hi - lo, 0.6), top = (hi + lo) / 2 + r / 2;
+    const t0 = kdate(l[0][0]).getTime(), t1 = kdate(l[l.length - 1][0]).getTime(), span = Math.max(t1 - t0, DAY);
+    const pts = l.map(x => [P + (kdate(x[0]).getTime() - t0) / span * (W - 2 * P), P + (top - x[1]) / r * (H - 2 * P)]);
+    return `<svg class="w-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Andamento del peso: da ${kg(l[0][1])} a ${kg(l[l.length - 1][1])} kg">
+      <polyline points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="var(--fire-bright)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i === pts.length - 1 ? 4.5 : 2.5}" fill="${i === pts.length - 1 ? 'var(--fire-bright)' : 'var(--on-iron)'}"/>`).join('')}
+    </svg><div class="w-ax"><span>${fmt(kdate(l[0][0]))}</span><span>min ${kg(lo)} · max ${kg(hi)}</span><span>${fmt(kdate(l[l.length - 1][0]))}</span></div>`;
+  }
+  function weightHTML(compact) {
+    const today = dkey(new Date()), cur = weights()[today], l = wList(), last = l[l.length - 1];
+    const diffs = wDiffs().map(x => `<span><b>${x[0]}</b> ${x[1]}</span>`).join('');
+    return `<section class="panel dark w-card${compact ? ' compact' : ''}" id="w-card"><div class="w-top"><h3>Peso di oggi</h3><span class="w-day">${fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+      <div class="w-form"><label class="w-in"><input id="w-in" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Peso di oggi in kg" placeholder="${last ? kg(last[1]) : '00,0'}" value="${cur != null ? kg(cur) : ''}"><span>kg</span></label>
+        <button type="button" class="sb-btn" id="w-save">${cur != null ? 'Aggiorna' : 'Salva'}</button></div>
+      <p class="w-msg" id="w-msg">${cur != null ? 'Segnato oggi: <b>' + kg(cur) + ' kg</b>' : last ? 'Ultimo: ' + kg(last[1]) + ' kg, ' + fmt(kdate(last[0]), { weekday: 'short', day: 'numeric', month: 'short' }) : 'Pesati al mattino, dopo il bagno e prima di mangiare.'}</p>
+      ${diffs ? `<div class="w-diff">${diffs}</div>` : ''}
+      ${compact ? '' : wChart(l.slice(-30)) + `<a class="w-all" href="#piano">Tutto lo storico <b>→</b></a>`}
+    </section>`;
+  }
+  function weightLogHTML() {
+    const l = wList().reverse();
+    return `<section class="sec panel" id="w-log"><h3>Diario del peso</h3>
+      <p class="small">Hai dimenticato un giorno? Scegli la data e scrivi il peso.</p>
+      <div class="w-form"><label class="w-date">Giorno<input type="date" id="w-date" value="${dkey(new Date())}" max="${dkey(new Date())}"></label>
+        <label class="w-in"><input id="w-in2" inputmode="decimal" autocomplete="off" aria-label="Peso in kg" placeholder="00,0"><span>kg</span></label>
+        <button type="button" class="sb-btn" id="w-save2">Salva</button></div>
+      ${l.length ? `<ol class="w-list">${l.map((x, i) => { const prev = l[i + 1], d = prev ? x[1] - prev[1] : null;
+        return `<li><span class="w-d">${fmt(kdate(x[0]), { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${kg(x[1])} kg</b><span class="w-c">${d == null ? '' : sign(d)}</span><button type="button" class="btn-ghost w-del" data-wdel="${x[0]}" aria-label="Rimuovi il peso del ${fmt(kdate(x[0]))}">Rimuovi</button></li>`; }).join('')}</ol>` : '<p class="small">Ancora nessun peso segnato.</p>'}
+    </section>`;
+  }
+  function saveWeightFrom(inputId, key) {
+    const inp = document.getElementById(inputId), v = parseKg(inp && inp.value);
+    if (v == null) { if (inp) { inp.focus(); inp.classList.add('bad'); } const m = document.getElementById('w-msg'); if (m && inputId === 'w-in') m.textContent = 'Scrivi un peso valido, per esempio 84,6.'; return; }
+    setWeight(key, v); buzz(); route(true);
+    const c = document.getElementById(inputId === 'w-in' ? 'w-card' : 'w-log'); if (c) { c.classList.remove('saved'); void c.offsetWidth; c.classList.add('saved'); }
+  }
+
+  /* ---------- diario del cibo: cosa hai mangiato e stima dei macro ---------- */
+  const MEALS = [['col', 'Colazione'], ['pra', 'Pranzo'], ['spu', 'Spuntini'], ['cen', 'Cena']];
+  const MAC = PROG.macros || { kcal: [2000, 2200], p: [100, 120], c: [230, 280], f: [60, 75] };
+  const n0 = v => Math.round(v).toLocaleString('it-IT');
+  const n1 = v => (Math.round(v * 10) / 10).toLocaleString('it-IT');
+  const fold = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  let foodDay = null, foodAdd = null, foodPick = null, foodQ = '', foodNew = false;
+  const customFoods = () => store.get('food-custom', []);
+  const allFoods = () => customFoods().concat(window.FitFood.FOODS);
+  const foodById = id => allFoods().find(f => f.id === id);
+  const foodLog = () => store.get('food', {});
+  const dayFood = k => (foodLog()[k] || []);
+  function setDayFood(k, list) {
+    const all = Object.assign({}, foodLog()); if (list.length) all[k] = list; else delete all[k];
+    const lim = dkey(new Date(Date.now() - 120 * DAY)); Object.keys(all).forEach(x => { if (x < lim) delete all[x]; }); // tiene 4 mesi
+    store.set('food', all);
+  }
+  function sumFood(list) { return list.reduce((a, e) => ({ k: a.k + e.k, p: a.p + e.p, c: a.c + e.c, f: a.f + e.f }), { k: 0, p: 0, c: 0, f: 0 }); }
+  const forGrams = (fd, g) => ({ k: Math.round(fd.k * g / 100), p: Math.round(fd.p * g) / 100, c: Math.round(fd.c * g) / 100, f: Math.round(fd.f * g) / 100 });
+  function macroBar(lbl, v, rg, unit) {
+    const pct = Math.min(100, v / rg[1] * 100), st = v < rg[0] ? '' : v <= rg[1] ? ' ok' : ' over';
+    return `<div class="mb${st}"><div class="mb-h"><b>${lbl}</b><span><em>${n0(v)}</em> / ${n0(rg[0])}–${n0(rg[1])} ${unit}</span></div><div class="mb-t"><i style="width:${pct.toFixed(1)}%"></i><s style="left:${(rg[0] / rg[1] * 100).toFixed(1)}%"></s></div></div>`;
+  }
+  function foodTotalsHTML(t) {
+    const left = MAC.kcal[0] - t.k, leftP = MAC.p[0] - t.p;
+    const msg = t.k === 0 ? 'Aggiungi quello che mangi: qui vedi calorie e macro della giornata.' :
+      left > 0 ? `Mancano circa <b>${n0(left)} kcal</b>${leftP > 0 ? ` e <b>${n0(leftP)} g di proteine</b>` : ' · proteine a posto'}.` :
+      t.k <= MAC.kcal[1] ? `Calorie centrate${leftP > 0 ? `: mancano ancora <b>${n0(leftP)} g di proteine</b>` : ', proteine comprese'}.` : `Sei <b>${n0(t.k - MAC.kcal[1])} kcal</b> sopra l'obiettivo di oggi.`;
+    return `<section class="panel dark f-tot" id="f-tot"><div class="f-k"><b>${n0(t.k)}</b><span>kcal su ${n0(MAC.kcal[0])}–${n0(MAC.kcal[1])}</span></div>
+      ${macroBar('Calorie', t.k, MAC.kcal, 'kcal').replace('class="mb', 'class="mb kcal')}
+      ${macroBar('Proteine', t.p, MAC.p, 'g')}${macroBar('Carboidrati', t.c, MAC.c, 'g')}${macroBar('Grassi', t.f, MAC.f, 'g')}
+      <p class="f-msg">${msg}</p></section>`;
+  }
+  function foodResults() {
+    const q = fold(foodQ.trim()), rec = store.get('food-recent', []);
+    let list;
+    if (!q) list = rec.map(foodById).filter(Boolean);
+    else { const words = q.split(/\s+/); list = allFoods().filter(f => { const n = fold(f.n); return words.every(x => n.includes(x)); }).sort((a, b) => fold(a.n).indexOf(q) - fold(b.n).indexOf(q)).slice(0, 40); }
+    const head = !q ? (list.length ? '<p class="f-rh">Usati di recente</p>' : '<p class="f-rh">Scrivi per cercare tra ' + allFoods().length + ' alimenti: pasta, pollo, yogurt…</p>') : (list.length ? '' : '<p class="f-rh">Nessun risultato. Crealo dall\'etichetta qui sotto.</p>');
+    return head + list.map(f => `<button type="button" class="f-res" data-fpick="${esc(f.id)}"><span><b>${esc(f.n)}</b><small>${esc(f.cat)}</small></span><em>${n0(f.k)} kcal<small>per 100 g</small></em></button>`).join('');
+  }
+  function foodPickerHTML(meal) {
+    const fd = foodPick && foodById(foodPick);
+    if (foodNew) return `<div class="f-pick" id="f-pick"><h4>Nuovo alimento</h4><p class="small">Copia i valori per 100 g dall'etichetta. Lo ritrovi nella ricerca.</p>
+      <div class="ed-f f-newf"><label class="wide">Nome<input id="fn-n" autocomplete="off" placeholder="Es. Yogurt proteico al cocco" maxlength="60"></label>
+        <label>Kcal<input id="fn-k" inputmode="decimal" autocomplete="off" placeholder="100 g"></label><label>Proteine (g)<input id="fn-p" inputmode="decimal" autocomplete="off"></label>
+        <label>Carboidrati (g)<input id="fn-c" inputmode="decimal" autocomplete="off"></label><label>Grassi (g)<input id="fn-f" inputmode="decimal" autocomplete="off"></label>
+        <label>Porzione (g)<input id="fn-g" inputmode="decimal" autocomplete="off" placeholder="100"></label></div>
+      <p class="f-err" id="fn-err" hidden></p>
+      <div class="f-act"><button type="button" class="sb-btn" id="fn-save">Salva e usa</button><button type="button" class="btn-ghost" data-fx="back">Indietro</button></div></div>`;
+    if (fd) {
+      const g = fd.g || 100, pv = forGrams(fd, g);
+      return `<div class="f-pick" id="f-pick"><h4>${esc(fd.n)}</h4><p class="small">Per 100 g: ${n0(fd.k)} kcal · P ${n1(fd.p)} · C ${n1(fd.c)} · G ${n1(fd.f)}</p>
+        <div class="f-portions">${[[0.5, 'Mezza'], [1, fd.u], [2, 'Doppia']].map(x => `<button type="button" data-fg="${Math.round(g * x[0])}">${esc(x[1])} <small>${Math.round(g * x[0])} g</small></button>`).join('')}</div>
+        <label class="w-in f-gin"><input id="f-g" inputmode="decimal" autocomplete="off" aria-label="Quantità in grammi" value="${g}"><span>g</span></label>
+        <p class="f-prev" id="f-prev">${n0(pv.k)} kcal · P ${n1(pv.p)} g · C ${n1(pv.c)} g · G ${n1(pv.f)} g</p>
+        <div class="f-act"><button type="button" class="sb-btn" id="f-ok">Aggiungi a ${esc(MEALS.find(m => m[0] === meal)[1])}</button><button type="button" class="btn-ghost" data-fx="back">Cambia alimento</button></div></div>`;
+    }
+    return `<div class="f-pick" id="f-pick"><label class="f-q"><input id="f-q" type="search" autocomplete="off" enterkeyhint="search" placeholder="Cerca un alimento" value="${esc(foodQ)}" aria-label="Cerca un alimento"></label>
+      <div class="f-results" id="f-res">${foodResults()}</div>
+      <div class="f-act"><button type="button" class="btn-ghost" data-fx="new">+ Alimento dall'etichetta</button><button type="button" class="btn-ghost" data-fx="close">Chiudi</button></div></div>`;
+  }
+  function viewFood() {
+    const today = dkey(new Date()); if (!foodDay || foodDay > today) foodDay = today;
+    const list = dayFood(foodDay), t = sumFood(list), isToday = foodDay === today;
+    const dayLbl = (isToday ? 'Oggi · ' : foodDay === dkey(new Date(Date.now() - DAY)) ? 'Ieri · ' : '') + fmt(kdate(foodDay), { weekday: 'long', day: 'numeric', month: 'long' });
+    const meals = MEALS.map(([m, lbl]) => {
+      const es = list.filter(e => e.m === m), st = sumFood(es);
+      return `<section class="panel f-meal" id="meal-${m}"><div class="f-mh"><h3>${lbl}</h3>${es.length ? `<span>${n0(st.k)} kcal · P ${n0(st.p)} g</span>` : ''}</div>
+        ${es.length ? `<ul class="f-list">${es.map(e => `<li><span class="f-n"><b>${esc(e.n)}</b><small>${n0(e.g)} g · P ${n1(e.p)} · C ${n1(e.c)} · G ${n1(e.f)}</small></span><em>${n0(e.k)}<small>kcal</small></em><button type="button" class="f-del" data-fdel="${esc(e.id)}" aria-label="Rimuovi ${esc(e.n)}">×</button></li>`).join('')}</ul>` : ''}
+        ${foodAdd === m ? foodPickerHTML(m) : `<button type="button" class="f-add" data-fadd="${m}">+ Aggiungi a ${lbl.toLowerCase()}</button>`}
+      </section>`;
+    }).join('');
+    return `<div class="dayhead"><div><div class="meta"><span class="chip gym">Alimentazione</span></div>
+        <p class="big">Cibo</p><p class="sub">Cosa hai mangiato e i macro della giornata</p></div></div>
+      <nav class="f-days" aria-label="Giorno"><button type="button" data-fday="-1" aria-label="Giorno prima">←</button><b>${dayLbl}</b><button type="button" data-fday="1" aria-label="Giorno dopo"${isToday ? ' disabled' : ''}>→</button></nav>
+      ${foodTotalsHTML(t)}
+      <div class="f-meals">${meals}</div>
+      <p class="small f-note">Le calorie e i macro sono stime fatte con valori medi per 100 g. Per un prodotto confezionato è più preciso crearlo dall'etichetta. Obiettivi della tua scheda: ${n0(MAC.kcal[0])}–${n0(MAC.kcal[1])} kcal e ${n0(MAC.p[0])}–${n0(MAC.p[1])} g di proteine al giorno.</p>`;
+  }
+  function foodGrams() { const v = parseFloat(String((document.getElementById('f-g') || {}).value || '').replace(',', '.')); return isFinite(v) && v > 0 && v <= 3000 ? Math.round(v) : null; }
+  function onFoodClick(e) {
+    const t = e.target;
+    const add = t.closest('[data-fadd]'); if (add) { foodAdd = add.dataset.fadd; foodPick = null; foodQ = ''; foodNew = false; route(true); const q = document.getElementById('f-q'); if (q) q.focus({ preventScroll: true }); document.getElementById('meal-' + foodAdd).scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' }); return true; }
+    const pk = t.closest('[data-fpick]'); if (pk) { foodPick = pk.dataset.fpick; route(true); return true; }
+    const fx = t.closest('[data-fx]');
+    if (fx) { const a = fx.dataset.fx; if (a === 'close') { foodAdd = null; foodPick = null; foodNew = false; } if (a === 'back') { foodPick = null; foodNew = false; } if (a === 'new') foodNew = true; route(true); return true; }
+    const fg = t.closest('[data-fg]'); if (fg) { const i = document.getElementById('f-g'); i.value = fg.dataset.fg; updateFoodPrev(); buzz(); return true; }
+    if (t.closest('#f-ok')) {
+      const fd = foodById(foodPick), g = foodGrams();
+      if (!fd || !g) { const i = document.getElementById('f-g'); if (i) { i.classList.add('bad'); i.focus(); } return true; }
+      const list = dayFood(foodDay).slice(), v = forGrams(fd, g);
+      list.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), m: foodAdd, n: fd.n, g }, v));
+      setDayFood(foodDay, list);
+      store.set('food-recent', [fd.id].concat(store.get('food-recent', []).filter(x => x !== fd.id)).slice(0, 12));
+      const m = foodAdd; foodAdd = null; foodPick = null; buzz(); route(true);
+      const box = document.getElementById('meal-' + m); if (box) { box.classList.remove('saved'); void box.offsetWidth; box.classList.add('saved'); }
+      return true;
+    }
+    if (t.closest('#fn-save')) {
+      const num = id => { const v = parseFloat(String(document.getElementById(id).value || '').replace(',', '.')); return isFinite(v) && v >= 0 ? v : null; };
+      const n = document.getElementById('fn-n').value.trim(), k = num('fn-k'), p = num('fn-p'), c = num('fn-c'), f = num('fn-f'), g = num('fn-g');
+      const err = document.getElementById('fn-err');
+      if (!n || k == null || k > 950 || p == null || c == null || f == null || p + c + f > 100) { err.hidden = false; err.textContent = !n ? 'Scrivi il nome.' : 'Controlla i valori: kcal, proteine, carboidrati e grassi per 100 g.'; return true; }
+      const fd = { id: 'c-' + Date.now().toString(36), n, k, p, c, f, g: g > 0 && g <= 2000 ? Math.round(g) : 100, u: g > 0 ? 'porzione' : '100 g', cat: 'I miei alimenti' };
+      store.set('food-custom', [fd].concat(customFoods()).slice(0, 200));
+      foodNew = false; foodPick = fd.id; buzz(); route(true); return true;
+    }
+    const del = t.closest('[data-fdel]');
+    if (del) {
+      if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = 'Togli'; del.classList.add('arm'); setTimeout(() => { if (del.isConnected) { del.dataset.confirm = ''; del.textContent = '×'; del.classList.remove('arm'); } }, 3500); return true; }
+      setDayFood(foodDay, dayFood(foodDay).filter(x => x.id !== del.dataset.fdel)); buzz(); route(true); return true;
+    }
+    const fday = t.closest('[data-fday]');
+    if (fday) { const d = new Date(kdate(foodDay).getTime() + (+fday.dataset.fday) * DAY + 12 * 3600000); foodDay = dkey(d); foodAdd = null; foodPick = null; route(true); return true; }
+    return false;
+  }
+  function updateFoodPrev() {
+    const fd = foodById(foodPick), g = foodGrams(), p = document.getElementById('f-prev');
+    if (!p || !fd) return;
+    if (!g) { p.textContent = 'Scrivi i grammi'; return; }
+    const v = forGrams(fd, g); p.textContent = n0(v.k) + ' kcal · P ' + n1(v.p) + ' g · C ' + n1(v.c) + ' g · G ' + n1(v.f) + ' g';
+  }
+
   /* ---------- viste ---------- */
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
-      <div><p class="eyebrow">${esc(PROG.eyebrow)}</p>
-        <h1 class="brandname">starfit<span>+</span></h1>
+      <div><h1 class="brandname neon" aria-label="starfit+">starfit<span>+</span></h1>
         <p class="lede">${esc(PROG.lede)}</p>
-        <div class="stats">${PROG.stats.map(x => `<div class="stat${x[2] ? ' hot' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}<div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
+        <div class="stats">${PROG.stats.map(x => { const lw = x[1] === 'Oggi' && lastWeight(); return `<div class="stat${x[2] ? ' hot' : ''}"><b>${esc(lw ? kg(lw[1]) + ' kg' : x[0])}</b><span>${lw ? 'Ultimo peso' : esc(x[1])}</span></div>`; }).join('')}<div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
       </div>
-      <div class="hero-fig"><svg data-anim="${PROG.heroAnim}" aria-label="Animazione: ${esc(EX[PROG.heroAnim] ? EX[PROG.heroAnim].name : 'allenamento')}"></svg></div>
     </div></section>`;
   }
 
@@ -358,6 +542,12 @@ window.FitAccount.whenReady(function () {
     </a>`;
   }
 
+  function matchPickHTML() {
+    if (!MATCHDAY) return '';
+    return `<div class="mday"><span class="mday-k">Partita</span><div class="mday-sw" role="group" aria-label="Giorno della partita">${Object.keys(PROG0.layouts).map(k =>
+      `<button type="button" data-matchday="${k}" aria-pressed="${k === MATCHDAY}">${esc(PROG0.layouts[k].matchLabel)}</button>`).join('')}</div>
+      <span class="mday-h">${MATCHDAY === 'dom' ? 'Giochi di sabato? Tocca Sabato: la settimana si riorganizza da sola.' : 'Settimana riorganizzata per la partita di sabato.'}</span></div>`;
+  }
   function viewHome() {
     const todayId = TODAY_ID();
     const tiles = days().map(d => {
@@ -370,10 +560,11 @@ window.FitAccount.whenReady(function () {
         ${pr.tot ? `<span class="prog"><i style="width:${Math.round(pr.n / pr.tot * 100)}%"></i></span><span class="prog-l">${pr.n}/${pr.tot} fatti</span>` : '<span class="prog-l">Mobilità 10′</span>'}
       </a>`;
     }).join('');
-    return installHTML() + `<section class="sec">${todayHTML()}</section>` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
-      <div class="week">${tiles}</div></section>
+    return installHTML() + `<section class="sec">${todayHTML()}</section><div class="sec">${weightHTML(false)}</div>` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
+      ${matchPickHTML()}<div class="week">${tiles}</div></section>
       <section class="sec quick">
         <a href="#mobilita"><b>Mobilità</b><span>10′ ogni giorno</span></a>
+        <a href="#cibo"><b>Cibo e macro</b><span>${(() => { const t = sumFood(dayFood(dkey(new Date()))); return t.k ? 'Oggi ' + n0(t.k) + ' kcal · ' + n0(t.p) + ' g proteine' : 'Segna cosa mangi oggi'; })()}</span></a>
         <a href="#esercizi"><b>Tutti gli esercizi</b><span>${Object.keys(EX).length} con video</span></a>
         <a href="#piano"><b>Piano e dieta</b><span>Test, calorie, regole</span></a>
       </section>
@@ -400,6 +591,7 @@ window.FitAccount.whenReady(function () {
         <p class="big">${d.d}</p><p class="sub">${esc(d.title)}</p>${d.goal ? `<p class="goal">${esc(d.goal)}</p>` : ''}</div>
         ${d.dur ? `<div class="dur"><b>${d.dur}</b><span>Durata</span></div>` : ''}</div>`;
     if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>${MOB.length} esercizi di mobilità, anche a casa</span></div><em>Apri →</em></a>`;
+    if (d.id === TODAY_ID()) html += weightHTML(true);
     html += `<div class="edit-bar"><button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
     const tips = PROG.tips && PROG.tips[d.type];
     if (tips) {
@@ -468,6 +660,7 @@ window.FitAccount.whenReady(function () {
         <ul class="list">${PL.list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       </div>
     </div>
+    ${weightLogHTML()}
     <section class="sec panel"><h3>Registro test (ogni 4 settimane)</h3>
       <div class="tablebox"><table><thead><tr><th>Quando</th>${colsT.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>
       ${rows.map((r, ri) => `<tr><th scope="row">${r}</th>${colsT.map((c, ci) => `<td><input id="t-${ri}-${ci}" inputmode="decimal" aria-label="${r}: ${c}" value="${esc(tests[ri + '-' + ci] || '')}"></td>`).join('')}</tr>`).join('')}
@@ -535,7 +728,7 @@ window.FitAccount.whenReady(function () {
     if (f === 's') v = normSets(v);
     if (v) it[f] = v; else delete it[f];
     if (f === 'r' || f === 's') t.value = v;
-    saveItems(d.id, items);
+    saveItems(d.pk, items);
     flashSaved(row);
   }
   function flashSaved(row) { row.classList.remove('saved'); void row.offsetWidth; row.classList.add('saved'); }
@@ -549,29 +742,29 @@ window.FitAccount.whenReady(function () {
         if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Conferma'; b.classList.add('arm'); setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Rimuovi'; b.classList.remove('arm'); } }, 3500); return true; }
         items.splice(i, 1);
       }
-      buzz(); saveItems(d.id, items); route(true); return true;
+      buzz(); saveItems(d.pk, items); route(true); return true;
     }
     if (e.target.closest('#ed-open')) { editing = (location.hash || '#').slice(1) || TODAY_ID(); if (editing === 'oggi') editing = TODAY_ID(); route(); return true; }
     if (e.target.closest('#ed-done')) { editing = null; route(); return true; }
     if (e.target.closest('#ed-add-go')) {
       const d = dayById(editing), items = editItems(d);
-      const it = { uid: d.id + ':n' + Date.now().toString(36), b: document.getElementById('ed-add-b').value, ex: document.getElementById('ed-add-ex').value,
+      const it = { uid: d.pk + ':n' + Date.now().toString(36), b: document.getElementById('ed-add-b').value, ex: document.getElementById('ed-add-ex').value,
         s: normSets(document.getElementById('ed-add-s').value) || '3 × 10' };
       const r = normRest(document.getElementById('ed-add-r').value); if (r) it.r = r;
-      items.push(it); saveItems(d.id, items); buzz(); route(true);
+      items.push(it); saveItems(d.pk, items); buzz(); route(true);
       const last = document.querySelector('#ed-list .ed-row:last-child'); if (last) { last.scrollIntoView({ block: 'center' }); flashSaved(last); }
       return true;
     }
     const rs = e.target.closest('#ed-reset');
     if (rs) {
       if (rs.dataset.confirm !== '1') { rs.dataset.confirm = '1'; rs.textContent = 'Tocca di nuovo per ripristinare'; setTimeout(() => { if (rs.isConnected) { rs.dataset.confirm = ''; rs.textContent = 'Ripristina la scheda originale'; } }, 4000); return true; }
-      const plan = store.get('plan', {}); delete plan[editing]; store.set('plan', plan); route(true); return true;
+      const plan = store.get('plan', {}); delete plan[dayById(editing).pk]; store.set('plan', plan); route(true); return true;
     }
     return false;
   }
 
   /* ---------- router ---------- */
-  const TABS = [['settimana', 'Settimana'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['mobilita', 'Mobilità'], ['esercizi', 'Esercizi'], ['piano', 'Piano']]);
+  const TABS = [['settimana', 'Settimana'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['mobilita', 'Mobilità'], ['cibo', 'Cibo'], ['esercizi', 'Esercizi'], ['piano', 'Piano']]);
   function renderTabs(cur) {
     const tabs = document.getElementById('tabs');
     tabs.innerHTML = TABS.map(t => t === 'sep' ? '<span class="sep"></span>' : `<a href="#${t[0]}"${t[0] === cur ? ' aria-current="page"' : ''}>${t[1]}</a>`).join('');
@@ -589,12 +782,12 @@ window.FitAccount.whenReady(function () {
     let id = (location.hash || '').replace('#', '') || 'settimana';
     if (id === 'oggi') id = TODAY_ID();
     const day = dayById(id);
-    if (!day && !['settimana', 'mobilita', 'esercizi', 'piano'].includes(id)) id = 'settimana';
+    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano'].includes(id)) id = 'settimana';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
     unmount(main); unmount(hero);
     hero.innerHTML = id === 'settimana' ? heroHTML() : '';
-    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : viewHome();
+    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : viewHome();
     mountFigures(hero); mountFigures(main);
     if (id === 'esercizi') applyLib();
     if (id === 'settimana') centerCalendar();
@@ -609,13 +802,39 @@ window.FitAccount.whenReady(function () {
     const k = e.target.dataset && e.target.dataset.key;
     if (k) { if (e.target.checked) done[k] = true; else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (e.target.id === 'w-in') { e.preventDefault(); e.target.blur(); saveWeightFrom('w-in', dkey(new Date())); }
+    if (e.target.id === 'f-g') { e.preventDefault(); document.getElementById('f-ok').click(); }
+    if (e.target.id === 'f-q') { e.preventDefault(); const first = document.querySelector('#f-res [data-fpick]'); if (first) first.click(); }
+    if (e.target.id === 'w-in2') { e.preventDefault(); e.target.blur(); document.getElementById('w-save2').click(); }
+  });
   document.addEventListener('input', e => {
+    if (e.target.id === 'f-q') { foodQ = e.target.value; document.getElementById('f-res').innerHTML = foodResults(); }
+    if (e.target.id === 'f-g') updateFoodPrev();
+    if (e.target.classList && e.target.classList.contains('bad')) e.target.classList.remove('bad');
     if (e.target.id === 'q') { libQuery = e.target.value.trim(); applyLib(); }
     const m = /^t-(\d+)-(\d+)$/.exec(e.target.id || '');
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
     if (onEditClick(e)) return;
+    if (onFoodClick(e)) return;
+    if (e.target.closest('#w-save')) return saveWeightFrom('w-in', dkey(new Date()));
+    if (e.target.closest('#w-save2')) { const dv = document.getElementById('w-date').value; if (/^\d{4}-\d{2}-\d{2}$/.test(dv) && dv <= dkey(new Date())) saveWeightFrom('w-in2', dv); return; }
+    const wd = e.target.closest('[data-wdel]');
+    if (wd) {
+      if (wd.dataset.confirm !== '1') { wd.dataset.confirm = '1'; wd.textContent = 'Conferma'; wd.classList.add('arm'); setTimeout(() => { if (wd.isConnected) { wd.dataset.confirm = ''; wd.textContent = 'Rimuovi'; wd.classList.remove('arm'); } }, 3500); return; }
+      setWeight(wd.dataset.wdel, null); buzz(); route(true); return;
+    }
+    const mdb = e.target.closest('[data-matchday]');
+    if (mdb && mdb.dataset.matchday !== MATCHDAY) {
+      buzz(); store.set('matchday', mdb.dataset.matchday);
+      document.querySelectorAll('[data-matchday]').forEach(b => b.setAttribute('aria-pressed', b === mdb));
+      // salva nell'account (al massimo 1,5 s di attesa, anche senza rete) e ricarica con la settimana nuova
+      Promise.race([Promise.resolve().then(() => window.FitAccount.saveNow()), new Promise(r => setTimeout(r, 1500))]).catch(() => {}).then(() => location.reload());
+      return;
+    }
     const sbb = e.target.closest('.setbar button');
     if (sbb) onSetBar(sbb);
     if (e.target.closest('#sw-open, .bnav-timer')) { buzz(); window.FitTimer.picker(); }
@@ -649,10 +868,11 @@ window.FitAccount.whenReady(function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', () => { editing = null; route(); });
+  window.addEventListener('hashchange', () => { editing = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
     if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();
+    if (MATCHDAY && PROG0.layouts[store.get('matchday', 'dom')] && store.get('matchday', 'dom') !== MATCHDAY) return location.reload();
     done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
     syncSlow(); route(true);
   });

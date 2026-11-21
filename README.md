@@ -17,9 +17,12 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 - contatore delle serie con timer di recupero automatico
 - timer di recupero rapido (30″–3′) e cronometro con giri
 - calendario di 12 settimane con settimane di scarico e test
+- partita la domenica o il sabato (scheda terzino): la settimana si riorganizza da sola
+- diario del peso giornaliero con grafico
+- diario del cibo: alimenti comuni con stima di calorie e macro, anche dall'etichetta
 - registro dei test, alimentazione e regole
 
-Scheda modificata, serie fatte, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.
+Scheda modificata, serie fatte, peso, cibo, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.
 
 Tutto gira sul piano gratuito di Netlify (Functions e Blobs): non serve nessun acquisto.
 
@@ -31,6 +34,7 @@ public/                 il sito: è l'unica cartella pubblicata
   app.js                interfaccia e modifica esercizi
   account.js            accesso e salvataggio nell'account
   data.js               esercizi e programmi (terzino, glutei)
+  food.js               alimenti con valori per 100 g
   videos.js             video YouTube per esercizio
   anim.js               animazioni degli esercizi
   timer.js              timer di recupero e cronometro

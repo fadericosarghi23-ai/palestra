@@ -374,6 +374,43 @@ window.FitData = (function () {
   ];
 
 
+  /* Settimana con la partita il sabato. La squadra si allena sempre martedì e giovedì.
+     pk = scheda modificabile a cui fa riferimento il giorno: stessa seduta, stesse modifiche. */
+  const DAYS_SAB = [
+    { id: "lun", pk: "lun-sab", d: "Lunedì", md: "MD-5", type: "gym", label: "Palestra A", title: "Parte superiore, core e velocità", dur: "70–80′",
+      goal: "Con la partita di sabato la Palestra C non ci sta: salti e cambi di direzione si spostano qui, a inizio seduta, quando sei fresco. Poi parte superiore e core per i contrasti.",
+      items: [
+        { b: "warm", ex: "bike", s: "5′", hold: 300, note: "Riscaldamento leggero" },
+        { b: "warm", ex: "pullapart", s: "2 × 15", r: "30″" },
+        { b: "main", ex: "pogo", s: "3 × 10", r: "60″", note: "Caviglie a molla" },
+        { b: "main", ex: "broad", s: "3 × 3", r: "90″", note: "Recupero completo tra un salto e l'altro" },
+        { b: "main", ex: "latbound", s: "3 × 4", per: "per lato", r: "60″", note: "Il cambio di direzione del terzino" },
+        { b: "main", ex: "bench", s: "4 × 6", r: "2′", note: "Pesante ma pulito" },
+        { b: "main", ex: "pullup", s: "4 × 6–8", r: "2′", note: "Anche zavorrate" },
+        { b: "main", ex: "landmine", s: "3 × 8", per: "per braccio", r: "90″", note: "Simula la spinta nel contrasto" },
+        { b: "main", ex: "pallof", s: "3 × 10", per: "per lato", r: "60″", note: "Il core che non si fa spostare" },
+        { b: "main", ex: "copen", s: "3 × 20″", per: "per lato", r: "60″", hold: 20 },
+        { b: "end", ex: "bike", s: "15′", hold: 900, note: "Ritmo a cui riesci ancora a parlare" }
+      ] },
+    Object.assign({}, DAYS[1], { md: "MD-4" }),
+    Object.assign({}, DAYS[2], { md: "MD-3", goal: "Tre giorni alla partita: è l'ultimo giorno utile per le gambe pesanti. Qui costruisci la spinta che ti fa partire come un missile." }),
+    Object.assign({}, DAYS[3], { md: "MD-2" }),
+    Object.assign({}, DAYS[5], { id: "ven", pk: "sab", d: "Venerdì" }),
+    Object.assign({}, DAYS[6], { id: "sab", pk: "dom", d: "Sabato" }),
+    { id: "dom", pk: "dom-sab", d: "Domenica", md: "MD+1", type: "rest", label: "Recupero", title: "Recupero dopo la partita", dur: "30′",
+      goal: "Il giorno dopo la partita: niente pesi. Muovi le gambe piano e scarica: domani riparti con la Palestra A.",
+      items: [
+        { b: "main", ex: "bike", s: "20′", hold: 1200, note: "Leggerissimo: devi poter chiacchierare" },
+        { b: "end", ex: "foam", s: "5–10′", note: "Quadricipiti, femorali, polpacci e glutei" }
+      ] }
+  ];
+  const REST_TIPS_SAB = [
+    ["Mobilità", "Fai i 10′ di mobilità: anche e caviglie si sbloccano dopo la partita."],
+    ["Mangia bene", "Proteine a ogni pasto e carboidrati normali: stai ricaricando."],
+    ["Acqua", "Bevi più del solito, soprattutto se ieri hai sudato tanto."],
+    ["Domani", "Palestra A con salti e cambi di direzione: arrivaci riposato."]
+  ];
+
   /* ===== Programmi: ogni account ne ha uno (campo "program" nei dati) ===== */
   const GLUTEI_DAYS = [
     { id: "lun", d: "Lunedì", md: "Giorno A", type: "gym", label: "Palestra A", title: "Glutei e schiena", dur: "55–60′",
@@ -432,10 +469,11 @@ window.FitData = (function () {
       pillars: [["Più", "veloce", "Forza pesante il mercoledì, salti e partenze il venerdì: più spinta nei primi 10 metri."],
         ["Più", "asciutto", "Deficit di 400–500 kcal e proteine alte: perdi grasso senza perdere esplosività."],
         ["Più", "solido", "Spinte, trazioni, core anti-rotazione e prevenzione: vinci i contrasti e resti in campo."]],
-      note: "<b>Partita la domenica.</b> Se giochi il sabato sposta tutto indietro di un giorno. Regole fisse: la palestra pesante per le gambe ad almeno 3 giorni dalla partita, il giorno prima solo attivazione.",
+      note: "<b>Partita la domenica.</b> Se una settimana giochi il sabato, scegli <b>Sabato</b> in «La settimana»: tutti i giorni si riorganizzano da soli. Regole fisse: la palestra pesante per le gambe ad almeno 3 giorni dalla partita, il giorno prima solo attivazione.",
       footer: "Scheda personale per terzino · 1,85 m · 85 kg. Se senti dolore all'inguine o ai femorali che non passa, fermati e fatti vedere da un fisioterapista.",
       days: DAYS, mob: MOB,
       tips: { field: FIELD_TIPS, match: MATCH_TIPS },
+      macros: { kcal: [2500, 2700], p: [160, 180], c: [280, 330], f: [65, 85] },
       testDay: 2,
       calNote: "Test il mercoledì delle settimane 1, 4, 8 e 12, all'inizio della Palestra B dopo il riscaldamento. Durante le feste (21 dicembre – 10 gennaio) il campionato di solito si ferma: tieni le 3 palestre e sostituisci le sedute con la squadra con 20–30′ di corsa e partenze.",
       plan: {
@@ -468,6 +506,7 @@ window.FitData = (function () {
           ["Proteine", "Anche oggi circa 90–100 g in tutta la giornata: il muscolo si costruisce adesso."],
           ["Sonno", "7–9 ore: è mentre dormi che glutei e schiena diventano più forti."]]
       },
+      macros: { kcal: [1900, 2100], p: [90, 100], c: [230, 280], f: [55, 70] },
       testDay: 0,
       calNote: "Test il lunedì delle settimane 1, 4, 8 e 12, all'inizio del Giorno A dopo il riscaldamento. Se durante le feste salti una seduta, riparti dalla successiva: non serve recuperare.",
       plan: {
@@ -483,6 +522,20 @@ window.FitData = (function () {
         testHint: "Misura fianchi e vita sempre al mattino, nello stesso punto.",
         rules: ["<b>Tecnica prima del carico</b>, soprattutto su hip thrust e stacco rumeno.", "Devi sentire lavorare i glutei, non la schiena: se senti la zona lombare, togli peso e riguarda il video.", "Un dolore alla schiena bassa o alle ginocchia che non passa va fatto vedere a un fisioterapista, non allenato sopra."]
       }
+    }
+  };
+
+  /* Giorno della partita del terzino: si sceglie dall'app (campo "matchday" nei dati) */
+  const T = PROGRAMS.terzino;
+  T.layouts = {
+    dom: { matchLabel: "Domenica" },
+    sab: {
+      matchLabel: "Sabato",
+      days: DAYS_SAB,
+      tips: { field: FIELD_TIPS, match: MATCH_TIPS, rest: REST_TIPS_SAB },
+      note: "<b>Questa settimana partita il sabato.</b> Lunedì Palestra A con salti e cambi di direzione, mercoledì gambe pesanti (3 giorni prima), venerdì attivazione, domenica recupero. La squadra resta martedì e giovedì. Quando torni a giocare la domenica, scegli <b>Domenica</b> in «La settimana».",
+      pillars: [["Più", "veloce", "Forza pesante il mercoledì, salti e cambi di direzione il lunedì: più spinta nei primi 10 metri."], T.pillars[1], T.pillars[2]],
+      plan: Object.assign({}, T.plan, { list: ["Carboidrati concentrati nei giorni di campo, mercoledì, venerdì e sabato; un po' meno lunedì e domenica.", T.plan.list[1]] })
     }
   };
 
