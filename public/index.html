@@ -708,6 +708,39 @@ body.auth-mode > header, body.auth-mode > #hero, body.auth-mode > main, body.aut
 .f-sl .sb-btn { min-height: 42px; padding-inline: 14px; white-space: nowrap; }
 .f-tag { font-style: normal; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 6px; margin-right: 4px; background: var(--iron); color: var(--on-iron); }
 .f-tag.p { background: var(--fire); color: #fff; }
+
+/* Libreria grande */
+.lib-count { margin: -6px 0 12px; font-size: 13px; color: var(--ink-muted); }
+.lib-more { display: block; width: 100%; max-width: 420px; margin: 18px auto 0; min-height: 48px; }
+.vid-none { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; aspect-ratio: 240 / 160; text-decoration: none; color: var(--on-iron); background: radial-gradient(120% 90% at 50% 0%, var(--iron-3), var(--iron) 70%); }
+.vid-none .vid-btn { position: static; transform: none; }
+.vid-none b { font: 800 22px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.vid-none span:last-child { font-size: 13px; color: var(--on-iron-muted); }
+.vid-none:active { opacity: .85; }
+
+/* Cambia esercizio e diario */
+.swap-btn { margin-top: 10px; background: transparent; border: 1px solid var(--steel-line); border-radius: 999px; padding: 7px 12px; min-height: 36px; font: 600 13px/1 inherit; color: var(--ink-muted); cursor: pointer; }
+.swap-btn:active { transform: scale(.97); }
+.alts { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--steel); border: 1px solid var(--steel-line); }
+.alts-h { margin: 0 0 6px; font-size: 14px; }
+.alts ul, .d-bad ul { list-style: none; margin: 0 0 10px; padding: 0; }
+.alts li, .d-bad li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--steel-line); }
+.alts li b, .d-bad li b { display: block; font-size: 14px; }
+.alts small, .d-bad small { display: block; font-size: 12px; color: var(--ink-muted); }
+.alts .sb-btn, .d-bad .sb-btn { min-height: 38px; white-space: nowrap; }
+.diary { margin-top: 18px; }
+.d-rate { display: flex; gap: 8px; margin: 10px 0; }
+.d-rate button { flex: 1; min-height: 42px; border-radius: 999px; border: 1px solid var(--steel-line); background: #fff; color: var(--ink); font: 700 14px/1 inherit; cursor: pointer; }
+.d-rate button[aria-pressed="true"] { background: var(--iron); color: var(--on-iron); border-color: var(--iron); }
+#d-text { width: 100%; box-sizing: border-box; font: 16px/1.4 inherit; padding: 12px; border-radius: 12px; border: 1.5px solid var(--steel-line); background: #fff; color: var(--ink); resize: vertical; min-height: 100px; }
+#d-text:focus { outline: none; border-color: var(--fire); }
+.d-ok { font-size: 13px; color: var(--ink-muted); font-weight: 600; }
+.d-bad { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--steel); border-left: 4px solid var(--fire); }
+.d-past ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.d-past li { padding: 8px 0; border-top: 1px solid var(--steel-line); font-size: 14px; }
+.d-past li p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.d-r { font-style: normal; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 6px; background: var(--iron); color: var(--on-iron); margin-left: 6px; }
+.d-r.duro { background: var(--fire); color: #fff; }
 </style>
 </head>
 <body>
@@ -735,6 +768,7 @@ body.auth-mode > header, body.auth-mode > #hero, body.auth-mode > main, body.aut
 <script src="data.js"></script>
 <script src="videos.js"></script>
 <script src="timer.js"></script>
+<script src="library.js"></script>
 <script src="food.js"></script>
 <script src="account.js"></script>
 <script src="app.js"></script>

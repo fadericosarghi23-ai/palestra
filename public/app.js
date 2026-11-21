@@ -2,6 +2,8 @@
 window.FitAccount.whenReady(function () {
   const { ANIM, evaluate, prepare, mid } = window.FitAnim;
   const { EX, PROGRAMS } = window.FitData;
+  /* Libreria grande (library.js): si aggiunge agli esercizi di base senza sovrascriverli */
+  if (window.FitLib) Object.keys(window.FitLib).forEach(id => { if (!EX[id]) EX[id] = window.FitLib[id]; });
   const NS = 'http://www.w3.org/2000/svg';
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -261,11 +263,13 @@ window.FitAccount.whenReady(function () {
 
   function card(id, it, key) {
     const e = EX[id];
-    const view = e.view === 'frontale' ? 'Vista frontale' : 'Vista laterale';
     const isDone = key && done[key];
     const restTxt = it && it.r ? (it.r === '—' ? '<span class="rest">Nessun recupero</span>' : `<span class="rest">Recupero <b>${esc(it.r)}</b></span>`) : '';
-    const dose = it ? `<div class="dose"><span class="sets">${esc(it.s)}</span>${it.per ? `<span class="per">${esc(it.per)}</span>` : ''}${restTxt}</div>${setBar(id, it, key)}` : `<p class="where">Nella scheda: ${usage(id)}</p>`;
+    const dose = it ? `<div class="dose"><span class="sets">${esc(it.s)}</span>${it.per ? `<span class="per">${esc(it.per)}</span>` : ''}${restTxt}</div>${setBar(id, it, key)}${key ? (swapFor === key ? altHTML(id, key) : `<button type="button" class="swap-btn" data-swap="${esc(key)}">⇄ Cambia esercizio</button>`) : ''}` : (usage(id) ? `<p class="where">Nella scheda: ${usage(id)}</p>` : '');
     const v = VIDEOS[id];
+    const ak = ANIM[id] ? id : (e.anim && ANIM[e.anim] ? e.anim : null);
+    const view = ((ak && EX[ak]) || e).view === 'frontale' ? 'Vista frontale' : 'Vista laterale';
+    if (!ak) return cardNoAnim(id, e, it, key, v, dose, isDone);
     const mode = v && mediaMode === 'video' ? 'video' : 'anim';
     const media = v ? `<div class="media-sw" role="group" aria-label="Cosa mostrare">
         <button type="button" data-mode="video" aria-pressed="${mode === 'video'}">Video</button><button type="button" data-mode="anim" aria-pressed="${mode === 'anim'}">Animazione</button></div>
@@ -276,9 +280,9 @@ window.FitAccount.whenReady(function () {
           <span class="vid-cap">Video di ${esc(v.ch)}${v.it ? ' · in italiano' : ' · in inglese'}</span>
         </button></div>` : '';
     return `<article class="ex${isDone ? ' is-done' : ''}" data-cat="${esc(e.cat)}" data-name="${esc((e.name + ' ' + e.mus.join(' ')).toLowerCase())}">
-      <div class="anim">${media}<div class="fig-wrap"${mode === 'video' ? ' hidden' : ''}><span class="view-tag">${view}</span><svg data-anim="${id}" aria-label="Animazione: ${esc(e.name)}"></svg><button class="pp" type="button"></button></div></div>
+      <div class="anim">${media}<div class="fig-wrap"${mode === 'video' ? ' hidden' : ''}><span class="view-tag">${view}${ak !== id ? ' · simile' : ''}</span><svg data-anim="${ak}" aria-label="Animazione: ${esc(e.name)}"></svg><button class="pp" type="button"></button></div></div>
       <div class="ex-body">
-        <div class="ex-top"><div><p class="cat">${esc(e.cat)}</p><h3>${esc(e.name)}</h3></div>
+        <div class="ex-top"><div><p class="cat">${esc(exMeta(e))}</p><h3>${esc(e.name)}</h3></div>
           ${key ? `<label class="done"><input type="checkbox" id="done-${key.replace(':', '-')}" data-key="${key}"${isDone ? ' checked' : ''}> Fatto</label>` : ''}</div>
         ${dose}
         ${it && it.note ? `<p class="note-l">${esc(it.note)}</p>` : ''}
@@ -288,6 +292,104 @@ window.FitAccount.whenReady(function () {
           <a class="yt" href="${v ? 'https://www.youtube.com/watch?v=' + v.id : ytUrl(e.yt)}" target="_blank" rel="noopener">Apri su YouTube ↗</a></div>
       </div></article>`;
   }
+
+  const LVL = ['', 'Principiante', 'Intermedio', 'Avanzato'];
+  const exMeta = e => [e.cat, e.eq, LVL[e.lvl] || ''].filter(Boolean).join(' · ');
+  function cardBody(id, e, it, key, v, dose, isDone) {
+    return `<div class="ex-body">
+        <div class="ex-top"><div><p class="cat">${esc(exMeta(e))}</p><h3>${esc(e.name)}</h3></div>
+          ${key ? `<label class="done"><input type="checkbox" id="done-${key.replace(':', '-')}" data-key="${key}"${isDone ? ' checked' : ''}> Fatto</label>` : ''}</div>
+        ${dose}
+        ${it && it.note ? `<p class="note-l">${esc(it.note)}</p>` : ''}
+        <details class="how"${isPhone() ? '' : ' open'}><summary>Come si fa <span>${e.steps.length} passi</span></summary><ol>${e.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol></details>
+        <details class="how"${isPhone() ? '' : ' open'}><summary>Errori da evitare <span>${e.err.length}</span></summary><ul class="err">${e.err.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>
+        <div class="ex-foot"><div class="mus">${e.mus.map(m => `<span>${esc(m)}</span>`).join('')}</div>
+          <a class="yt" href="${v ? 'https://www.youtube.com/watch?v=' + v.id : ytUrl(e.yt)}" target="_blank" rel="noopener">Apri su YouTube ↗</a></div>
+      </div>`;
+  }
+  // Esercizio senza animazione: grande pulsante che apre i video su YouTube
+  function cardNoAnim(id, e, it, key, v, dose, isDone) {
+    const media = v ? `<div class="vid" data-vid="${v.id}" data-title="${esc(e.name)}"><button type="button" class="vid-play" aria-label="Riproduci il video: ${esc(e.name)}">
+          <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" loading="lazy"><span class="vid-btn"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="currentColor"/></svg></span>
+          <span class="vid-cap">Video di ${esc(v.ch)}</span></button></div>`
+      : `<a class="vid-none" href="${ytUrl(e.yt)}" target="_blank" rel="noopener"><span class="vid-btn"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="currentColor"/></svg></span><b>Guarda come si fa</b><span>Video su YouTube ↗</span></a>`;
+    return `<article class="ex no-anim${isDone ? ' is-done' : ''}" data-cat="${esc(e.cat)}"><div class="anim">${media}</div>${cardBody(id, e, it, key, v, dose, isDone)}</article>`;
+  }
+
+  /* ---------- alternative: esercizi diversi che allenano la stessa cosa ---------- */
+  let swapFor = null;
+  const FAMILY = { Gambe: ['Glutei', 'Femorali'], Glutei: ['Gambe', 'Femorali'], Femorali: ['Glutei', 'Gambe', 'Prevenzione'], Velocità: ['Agilità', 'Pliometria'], Agilità: ['Velocità', 'Pliometria'], Pliometria: ['Potenza', 'Velocità'], Potenza: ['Pliometria', 'Contrasti'], Core: ['Contrasti'], Contrasti: ['Core', 'Potenza'], Mobilità: ['Stretching'], Stretching: ['Mobilità', 'Recupero'], Attivazione: ['Riscaldamento'], Riscaldamento: ['Attivazione'], Recupero: ['Stretching', 'Mobilità'], Schiena: [], 'Petto e spalle': ['Braccia'], Braccia: ['Petto e spalle'], Prevenzione: ['Femorali', 'Gambe', 'Glutei', 'Core'], Cardio: [] };
+  const musKey = m => fold(m).slice(0, 5); // glutei/gluteo medio, femorali/femorale...
+  function alternatives(id, n, exclude) {
+    const e = EX[id]; if (!e) return [];
+    const mus = [...new Set(e.mus.map(musKey))], fam = FAMILY[e.cat] || [], skip = new Set(exclude || []);
+    return Object.keys(EX).filter(x => x !== id && !skip.has(x) && forMe(EX[x])).map(x => {
+      const o = EX[x], om = [...new Set(o.mus.map(musKey))];
+      let ms = 0; om.forEach((m, i) => { const j = mus.indexOf(m); if (j >= 0) ms += (i === 0 && j === 0 ? 6 : j === 0 || i === 0 ? 3 : 1.5); });
+      if (ms < 3) return null; // deve allenare davvero gli stessi muscoli
+      let sc = ms + (o.cat === e.cat ? 4 : fam.includes(o.cat) ? 2 : 0);
+      if (o.lvl && e.lvl) sc -= Math.abs(o.lvl - e.lvl); else if (o.lvl === 3) sc -= 1;
+      if (o.eq && e.eq && o.eq === e.eq) sc -= 0.5; // meglio proporre un attrezzo diverso
+      return [x, sc];
+    }).filter(x => x && x[1] >= 7).sort((a, b) => b[1] - a[1] || EX[a[0]].name.localeCompare(EX[b[0]].name, 'it')).slice(0, n).map(x => x[0]);
+  }
+  function altHTML(id, key) {
+    const inDay = days().flatMap(d => d.items || []).map(i => i.ex);
+    const alts = alternatives(id, 5, inDay);
+    return `<div class="alts"><p class="alts-h">Al posto di <b>${esc(EX[id].name)}</b>, allena la stessa cosa:</p>
+      ${alts.length ? `<ul>${alts.map(a => `<li><span><b>${esc(EX[a].name)}</b><small>${esc(exMeta(EX[a]))} · ${esc(EX[a].mus.slice(0, 3).join(', '))}</small></span><button type="button" class="sb-btn" data-swapto="${esc(key)}|${a}">Usa questo</button></li>`).join('')}</ul>` : '<p class="small">Nessuna alternativa trovata.</p>'}
+      <button type="button" class="btn-ghost" data-swap="">Lascia com'è</button></div>`;
+  }
+  // Sostituisce l'esercizio nella scheda del giorno mantenendo serie, recupero e parte
+  function swapExercise(uid, newId) {
+    for (const d of days()) {
+      const i = (d.items || []).findIndex(x => x.uid === uid);
+      if (i < 0) continue;
+      const items = JSON.parse(JSON.stringify(d.items));
+      const old = items[i].ex; items[i].ex = newId; delete items[i].note; delete items[i].hold;
+      items[i].note = 'Al posto di ' + EX[old].name;
+      saveItems(d.pk, items); return d;
+    }
+    return null;
+  }
+
+  /* ---------- diario dell'allenamento (facoltativo) ---------- */
+  const WEEKDAYS = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'];
+  function dateOfDay(dayId) { const t = today0(), wd = (t.getDay() + 6) % 7; return dkey(new Date(t.getTime() + (WEEKDAYS.indexOf(dayId) - wd) * DAY + 12 * 3600000)); }
+  const logs = () => store.get('logs', {});
+  const NEG = /(non mi (e |è )?piac|non mi (e |è )?piaciut|odio|noios|fastidi|dolor|mi fa male|male (al|alla|alle|ai|agli|all)|scomod|non riesc|non lo sopport|evitere|non mi convinc|non mi trovo|troppo difficil)/;
+  function dislikedIn(text, d) {
+    const sent = fold(text).split(/[.!?\n;]+/).filter(x => NEG.test(x));
+    if (!sent.length) return [];
+    const stop = new Set(['con', 'per', 'una', 'sul', 'sulla', 'alla', 'della', 'dei', 'delle', 'lato', 'gamba', 'braccio', 'esercizio', 'veloce', 'lento']);
+    return (d.items || []).filter(it => it.ex && EX[it.ex]).filter(it => {
+      const nm = fold(EX[it.ex].name.replace(/\(.*?\)/g, ''));
+      const words = nm.split(/\s+/).filter(x => x.length > 3 && !stop.has(x));
+      return sent.some(st => st.includes(nm) || (words.length && words.slice(0, 2).every(x => st.includes(x))) || st.includes(it.ex.replace(/-/g, ' ')));
+    });
+  }
+  function diaryHTML(d) {
+    const k = dateOfDay(d.id), L = logs(), cur = L[k] && L[k].d === d.id ? L[k] : null;
+    const past = Object.entries(L).filter(([dk, v]) => v.pk === d.pk && dk !== k && v.t).sort((a, b) => a[0] < b[0] ? 1 : -1).slice(0, 3);
+    const bad = cur && cur.t ? dislikedIn(cur.t, d) : [];
+    const R = [['facile', 'Facile'], ['giusto', 'Giusto'], ['duro', 'Duro']];
+    return `<section class="panel diary" id="diary"><div class="f-mh"><h3>Diario dell'allenamento</h3><span>facoltativo</span></div>
+      <p class="small">Com'è andata ${d.d.toLowerCase()} ${fmt(kdate(k), { day: 'numeric', month: 'short' })}? Carichi usati, sensazioni, cosa ti è piaciuto e cosa no. Se scrivi che un esercizio non ti piace ti propongo un'alternativa.</p>
+      <div class="d-rate" role="group" aria-label="Com'è stato">${R.map(r => `<button type="button" data-rate="${r[0]}" aria-pressed="${!!cur && cur.r === r[0]}">${r[1]}</button>`).join('')}</div>
+      <textarea id="d-text" rows="4" maxlength="1200" placeholder="Es. hip thrust 60 kg 4×10 facile, la prossima volta 62,5. Il box jump non mi piace.">${cur ? esc(cur.t || '') : ''}</textarea>
+      <div class="f-act"><button type="button" class="sb-btn" id="d-save">${cur ? 'Aggiorna le note' : 'Salva le note'}</button>${cur ? '<span class="d-ok">Salvato ✓</span>' : ''}</div>
+      ${bad.length ? `<div class="d-bad">${bad.map(it => `<p class="alts-h">Hai scritto che <b>${esc(EX[it.ex].name)}</b> non ti va. Vuoi cambiarlo?</p>${(() => { const a = alternatives(it.ex, 3, (d.items || []).map(i => i.ex)); return a.length ? `<ul>${a.map(x => `<li><span><b>${esc(EX[x].name)}</b><small>${esc(exMeta(EX[x]))}</small></span><button type="button" class="sb-btn" data-swapto="${esc(it.uid)}|${x}">Usa questo</button></li>`).join('')}</ul>` : ''; })()}`).join('')}</div>` : ''}
+      ${past.length ? `<details class="how d-past"${past.length ? ' open' : ''}><summary>Le volte prima <span>${past.length}</span></summary><ul>${past.map(([dk, v]) => `<li><b>${fmt(kdate(dk), { weekday: 'short', day: 'numeric', month: 'short' })}</b>${v.r ? ` <i class="d-r ${v.r}">${esc(R.find(r => r[0] === v.r)[1])}</i>` : ''}<p>${esc(v.t)}</p></li>`).join('')}</ul></details>` : ''}
+    </section>`;
+  }
+  function saveDiary(d, patch) {
+    const k = dateOfDay(d.id), L = Object.assign({}, logs()), cur = L[k] && L[k].d === d.id ? L[k] : { d: d.id };
+    L[k] = Object.assign({}, cur, { pk: d.pk, at: Date.now() }, patch);
+    if (!L[k].t && !L[k].r) delete L[k];
+    const ks = Object.keys(L).sort(); while (ks.length > 300) delete L[ks.shift()]; // tiene circa 10 mesi
+    store.set('logs', L);
+  }
+  const curDay = () => { const id = (location.hash || '#').slice(1); return dayById(id === 'oggi' || !id ? TODAY_ID() : id); };
 
   function dayProgress(d) {
     const its = (d.items || []).filter(i => i.ex);
@@ -659,7 +761,7 @@ window.FitAccount.whenReady(function () {
   }
   function viewDay(d) {
     if (editing === d.id) return dayStrip(d.id) + viewEdit(d);
-    return dayStrip(d.id) + viewDayBody(d) + dayPager(d);
+    return dayStrip(d.id) + viewDayBody(d) + diaryHTML(d) + dayPager(d);
   }
   function viewDayBody(d) {
     const pr = dayProgress(d);
@@ -697,22 +799,47 @@ window.FitAccount.whenReady(function () {
       <div class="grid">${MOB.map(m => card(m.ex, { s: m.s, hold: m.hold })).join('')}</div>`;
   }
 
-  let libFilter = 'Tutti', libQuery = '';
+  let libFilter = 'Per te', libQuery = '', libShown = 24;
+  const CAT_ORDER = {
+    terzino: ['Velocità', 'Agilità', 'Pliometria', 'Potenza', 'Gambe', 'Femorali', 'Glutei', 'Contrasti', 'Petto e spalle', 'Schiena', 'Braccia', 'Core', 'Prevenzione', 'Attivazione', 'Riscaldamento', 'Mobilità', 'Stretching', 'Cardio', 'Recupero'],
+    glutei: ['Glutei', 'Gambe', 'Femorali', 'Core', 'Schiena', 'Petto e spalle', 'Braccia', 'Mobilità', 'Stretching', 'Cardio', 'Riscaldamento', 'Attivazione', 'Prevenzione', 'Recupero', 'Velocità', 'Agilità', 'Pliometria', 'Potenza', 'Contrasti']
+  };
+  const catRank = c => { const o = CAT_ORDER[PROG.id] || CAT_ORDER.terzino, i = o.indexOf(c); return i < 0 ? 99 : i; };
+  const forMe = e => !e.per || e.per.includes(PROG.id);
+  const exText = (id, e) => fold([e.name, e.cat, e.eq || '', e.mus.join(' '), id.replace(/-/g, ' ')].join(' '));
+  const nameHits = (id, words) => { const n = fold(EX[id].name + " " + EX[id].cat); return words.reduce((t, x) => t + (n.includes(x) ? 1 : 0), 0); };
+  function libMatches() {
+    const used = new Set(); days().forEach(d => (d.items || []).forEach(it => it.ex && used.add(it.ex))); MOB.forEach(m => used.add(m.ex));
+    const words = fold(libQuery).split(/\s+/).filter(Boolean);
+    return Object.keys(EX).filter(id => {
+      const e = EX[id];
+      if (libFilter === 'Per te' && !forMe(e)) return false;
+      if (libFilter !== 'Per te' && libFilter !== 'Tutti' && e.cat !== libFilter) return false;
+      if (words.length) { const t = exText(id, e); if (!words.every(x => t.includes(x))) return false; }
+      return true;
+    }).sort((a, b) => (words.length ? nameHits(b, words) - nameHits(a, words) : 0) || (used.has(b) - used.has(a)) || (catRank(EX[a].cat) - catRank(EX[b].cat)) || ((EX[a].lvl || 1) - (EX[b].lvl || 1)) || EX[a].name.localeCompare(EX[b].name, 'it'));
+  }
   function viewLib() {
-    const cats = ['Tutti'].concat([...new Set(Object.values(EX).map(e => e.cat))]);
-    return `<div class="sec-h"><div><h2>Tutti gli esercizi</h2><p class="kicker">${Object.keys(EX).length} esercizi con animazione, spiegazione e video.</p></div></div>
-      <div class="filters"><input class="search" id="q" type="search" placeholder="Cerca un esercizio o un muscolo" value="${esc(libQuery)}">
-      <div class="fchips">${cats.map(c => `<button class="fchip" type="button" data-cat="${esc(c)}" aria-pressed="${c === libFilter}">${esc(c)}</button>`).join('')}</div></div>
-      <div class="grid" id="lib">${Object.keys(EX).map(id => card(id)).join('')}</div>
-      <p class="empty" id="none" hidden>Nessun esercizio trovato. Prova con un'altra parola.</p>`;
+    const all = Object.values(EX), mine = all.filter(forMe).length;
+    const cats = [...new Set(all.map(e => e.cat))].sort((a, b) => catRank(a) - catRank(b));
+    return `<div class="sec-h"><div><h2>Tutti gli esercizi</h2><p class="kicker">${n0(all.length)} esercizi, ${n0(mine)} adatti alla tua scheda. Cerca per nome, muscolo o attrezzo.</p></div></div>
+      <div class="filters"><input class="search" id="q" type="search" placeholder="Es. glutei elastico, sprint, femorali" value="${esc(libQuery)}" autocomplete="off">
+      <div class="fchips">${['Per te', 'Tutti'].concat(cats).map(c => `<button class="fchip" type="button" data-cat="${esc(c)}" aria-pressed="${c === libFilter}">${esc(c)}</button>`).join('')}</div></div>
+      <p class="lib-count" id="lib-count"></p>
+      <div class="grid" id="lib"></div>
+      <button type="button" class="btn-ghost lib-more" id="lib-more" hidden></button>
+      <p class="empty" id="none" hidden>Nessun esercizio trovato. Prova con un'altra parola o scegli «Tutti».</p>`;
   }
   function applyLib() {
-    let shown = 0;
-    document.querySelectorAll('#lib .ex').forEach(c => {
-      const ok = (libFilter === 'Tutti' || c.dataset.cat === libFilter) && (!libQuery || c.dataset.name.includes(libQuery.toLowerCase()));
-      c.hidden = !ok; if (ok) shown++;
-    });
-    const n = document.getElementById('none'); if (n) n.hidden = shown > 0;
+    const box = document.getElementById('lib'); if (!box) return;
+    const list = libMatches(), show = list.slice(0, libShown);
+    unmount(box);
+    box.innerHTML = show.map(id => card(id)).join('');
+    mountFigures(box);
+    const more = document.getElementById('lib-more'), rest = list.length - show.length;
+    more.hidden = rest <= 0; more.textContent = 'Mostra altri ' + Math.min(24, rest) + ' (ne restano ' + n0(rest) + ')';
+    document.getElementById('lib-count').textContent = list.length ? n0(list.length) + (list.length === 1 ? ' esercizio' : ' esercizi') : '';
+    document.getElementById('none').hidden = list.length > 0;
   }
 
   function viewPlan() {
@@ -761,6 +888,15 @@ window.FitAccount.whenReady(function () {
   function normSets(v) { return String(v || '').trim().replace(/\s*[xX*]\s*/, ' × '); }
   function editItems(d) { return JSON.parse(JSON.stringify(d.items || [])); }
   function saveItems(dayId, items) { const plan = store.get('plan', {}); plan[dayId] = items; store.set('plan', plan); }
+  // Elenco degli esercizi da aggiungere: prima quelli adatti alla scheda, al massimo 250 risultati
+  function edOpts(q) {
+    const words = fold(q || '').split(/\s+/).filter(Boolean);
+    const ids = Object.keys(EX).filter(id => (words.length ? words.every(x => exText(id, EX[id]).includes(x)) : forMe(EX[id])))
+      .sort((a, b) => (catRank(EX[a].cat) - catRank(EX[b].cat)) || EX[a].name.localeCompare(EX[b].name, 'it')).slice(0, 250);
+    if (!ids.length) return '<option value="" disabled selected>Nessun esercizio trovato</option>';
+    const by = {}; ids.forEach(id => (by[EX[id].cat] = by[EX[id].cat] || []).push(id));
+    return Object.keys(by).map(c => `<optgroup label="${esc(c)}">${by[c].map(id => `<option value="${id}">${esc(EX[id].name)}</option>`).join('')}</optgroup>`).join('');
+  }
   function viewEdit(d) {
     const items = d.items || [], bl = BLOCKS(d);
     const opt = (val, cur) => `<option value="${val[0]}"${val[0] === cur ? ' selected' : ''}>${val[1]}</option>`;
@@ -778,14 +914,14 @@ window.FitAccount.whenReady(function () {
           ${it.link ? '' : `<label class="wide">Nota<input id="ed-n-${u}" data-f="note" value="${esc(it.note || '')}" placeholder="Facoltativa" autocomplete="off"></label>`}
         </div></li>`;
     }).join('');
-    const cats = [...new Set(Object.values(EX).map(e => e.cat))];
-    const opts = cats.map(c => `<optgroup label="${esc(c)}">${Object.keys(EX).filter(id => EX[id].cat === c).map(id => `<option value="${id}">${esc(EX[id].name)}</option>`).join('')}</optgroup>`).join('');
+    const opts = edOpts('');
     return `<div class="dayhead"><div><div class="meta"><span class="chip ${TYPE_CHIP[d.type]}">${esc(d.label)}</span><span class="md">${d.md}</span></div>
         <p class="big">${d.d}</p><p class="sub">Modifica esercizi</p>
         <p class="goal">Cambia serie, recupero e note, sposta o togli gli esercizi e aggiungine di nuovi. Ogni modifica si salva da sola nel tuo account.</p></div></div>
       <ol class="ed-list" id="ed-list" data-day="${d.id}">${rows || '<li class="ed-empty">Nessun esercizio in questo giorno. Aggiungine uno qui sotto.</li>'}</ol>
       <section class="panel ed-add"><h3>Aggiungi un esercizio</h3>
         <div class="ed-f">
+          <label class="wide">Cerca<input id="ed-add-q" type="search" autocomplete="off" placeholder="Nome, muscolo o attrezzo"></label>
           <label class="wide">Esercizio<select id="ed-add-ex">${opts}</select></label>
           <label>Parte<select id="ed-add-b">${bl.map(x => opt(x, 'main')).join('')}</select></label>
           <label>Serie × ripetizioni<input id="ed-add-s" value="3 × 10" autocomplete="off"></label>
@@ -825,6 +961,7 @@ window.FitAccount.whenReady(function () {
     if (e.target.closest('#ed-done')) { editing = null; route(); return true; }
     if (e.target.closest('#ed-add-go')) {
       const d = dayById(editing), items = editItems(d);
+      if (!document.getElementById('ed-add-ex').value) return true;
       const it = { uid: d.pk + ':n' + Date.now().toString(36), b: document.getElementById('ed-add-b').value, ex: document.getElementById('ed-add-ex').value,
         s: normSets(document.getElementById('ed-add-s').value) || '3 × 10' };
       const r = normRest(document.getElementById('ed-add-r').value); if (r) it.r = r;
@@ -886,17 +1023,26 @@ window.FitAccount.whenReady(function () {
     if (e.target.id === 'f-q') { e.preventDefault(); const first = document.querySelector('#f-res [data-fpick]'); if (first) first.click(); }
     if (e.target.id === 'w-in2') { e.preventDefault(); e.target.blur(); document.getElementById('w-save2').click(); }
   });
+  let libTimer = 0;
   document.addEventListener('input', e => {
     if (e.target.id === 'f-q') { foodQ = e.target.value; document.getElementById('f-res').innerHTML = foodResults(); }
     if (e.target.id === 'f-g') updateFoodPrev();
     if (e.target.classList && e.target.classList.contains('bad')) e.target.classList.remove('bad');
-    if (e.target.id === 'q') { libQuery = e.target.value.trim(); applyLib(); }
+    if (e.target.id === 'q') { libQuery = e.target.value.trim(); libShown = 24; clearTimeout(libTimer); libTimer = setTimeout(applyLib, 180); }
+    if (e.target.id === 'ed-add-q') { const sel = document.getElementById('ed-add-ex'); sel.innerHTML = edOpts(e.target.value); }
     const m = /^t-(\d+)-(\d+)$/.exec(e.target.id || '');
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
     if (onEditClick(e)) return;
     if (onFoodClick(e)) return;
+    const swb = e.target.closest('[data-swap]');
+    if (swb) { swapFor = swb.dataset.swap || null; buzz(); route(true); const c = swapFor && document.querySelector('[data-swapto^="' + swapFor + '|"]'); if (c) c.closest('.alts').scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); return; }
+    const st = e.target.closest('[data-swapto]');
+    if (st) { const [uid, nid] = st.dataset.swapto.split('|'); swapFor = null; if (EX[nid] && swapExercise(uid, nid)) { buzz(); route(true); } return; }
+    const rt = e.target.closest('[data-rate]');
+    if (rt) { const d = curDay(); if (d) { const v = rt.getAttribute('aria-pressed') === 'true' ? '' : rt.dataset.rate; const ta = document.getElementById('d-text'); saveDiary(d, { r: v, t: ta ? ta.value.trim() : '' }); buzz(); route(true); } return; }
+    if (e.target.closest('#d-save')) { const d = curDay(); if (d) { saveDiary(d, { t: document.getElementById('d-text').value.trim() }); buzz(); route(true); const b = document.querySelector('.d-bad') || document.getElementById('diary'); if (b) b.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } return; }
     if (e.target.closest('#w-save')) return saveWeightFrom('w-in', dkey(new Date()));
     if (e.target.closest('#w-save2')) { const dv = document.getElementById('w-date').value; if (/^\d{4}-\d{2}-\d{2}$/.test(dv) && dv <= dkey(new Date())) saveWeightFrom('w-in2', dv); return; }
     const wd = e.target.closest('[data-wdel]');
@@ -932,7 +1078,8 @@ window.FitAccount.whenReady(function () {
       vid.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${vid.dataset.vid}?autoplay=1&rel=0&playsinline=1" title="Video: ${esc(vid.dataset.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
     }
     const f = e.target.closest('.fchip');
-    if (f) { libFilter = f.dataset.cat; document.querySelectorAll('.fchip').forEach(b => b.setAttribute('aria-pressed', b === f)); applyLib(); }
+    if (f) { libFilter = f.dataset.cat; libShown = 24; document.querySelectorAll('.fchip').forEach(b => b.setAttribute('aria-pressed', b === f)); applyLib(); }
+    if (e.target.closest('#lib-more')) { libShown += 24; applyLib(); }
     if (e.target.id === 'install-ok') { store.set('install-ok', true); const box = document.getElementById('install'); if (box) box.remove(); }
     if (e.target.id === 'reset') { done = {}; setsDone = {}; store.set('done', done); store.set('sets', setsDone); route(); }
   });
@@ -945,7 +1092,7 @@ window.FitAccount.whenReady(function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', () => { editing = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
+  window.addEventListener('hashchange', () => { editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
     if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();

@@ -12,7 +12,9 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 ## Cosa contiene
 
 - account personali: si accede una volta e il telefono resta collegato
-- 51 esercizi con video YouTube, animazione, passi ed errori da evitare
+- oltre 1.000 esercizi divisi in 19 aree (velocità, agilità, glutei, core, mobilità…), con passi, errori da evitare, attrezzo, livello e video YouTube; ricerca e filtro «Per te»
+- «Cambia esercizio»: propone alternative che allenano gli stessi muscoli
+- diario facoltativo di ogni allenamento: se scrivi che un esercizio non ti piace, propone come sostituirlo
 - modifica degli esercizi per ogni giorno: serie, recupero, note, ordine, aggiunta e rimozione
 - contatore delle serie con timer di recupero automatico
 - timer di recupero rapido (30″–3′) e cronometro con giri
@@ -35,6 +37,7 @@ public/                 il sito: è l'unica cartella pubblicata
   account.js            accesso e salvataggio nell'account
   data.js               esercizi e programmi (terzino, glutei)
   food.js               alimenti con valori per 100 g
+  library.js            libreria completa degli esercizi
   videos.js             video YouTube per esercizio
   anim.js               animazioni degli esercizi
   timer.js              timer di recupero e cronometro

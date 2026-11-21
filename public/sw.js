@@ -1,7 +1,7 @@
 /* starfit+ — service worker: l'app funziona anche senza rete.
    Attivo solo su HTTPS (o localhost): su http://192.168... il browser non lo avvia. */
-const VERSION = 'fit-v8';
-const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './food.js', './account.js', './app.js',
+const VERSION = 'fit-v10';
+const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './food.js', './library.js', './account.js', './app.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 const RUNTIME = 'fit-runtime-v1';
 
