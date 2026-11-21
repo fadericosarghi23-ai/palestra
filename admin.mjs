@@ -2,9 +2,11 @@
 /* starfit+ — gestione degli account dal PC. Dal sito non si possono creare account.
 
    node admin.mjs elenco                     mostra gli account
-   node admin.mjs crea <nome>                crea un account (chiede la password)
-   node admin.mjs password <nome>            cambia la password (chiude le sessioni aperte)
-   node admin.mjs elimina <nome>             elimina l'account e i suoi dati
+   node admin.mjs crea <nome> --programma <id>   crea un account con il suo programma (chiede la password)
+   node admin.mjs programma <nome> <id>          cambia il programma (chiede la password dell'account)
+   node admin.mjs password <nome>                cambia la password (chiude le sessioni aperte)
+   node admin.mjs elimina <nome>                 elimina l'account e i suoi dati
+   node admin.mjs programmi                      mostra i programmi disponibili
 
    Di base lavora sul server locale (http://localhost:8080).
    Per il sito online aggiungi:  --sito https://tuosito.netlify.app
@@ -20,7 +22,8 @@ const args = process.argv.slice(2);
 const flag = name => { const i = args.indexOf(name); if (i < 0) return null; const v = args[i + 1]; args.splice(i, 2); return v; };
 const yes = (() => { const i = args.indexOf('--si'); if (i >= 0) { args.splice(i, 1); return true; } return false; })();
 const site = (flag('--sito') || process.env.STARFIT_SITE || 'http://localhost:8080').replace(/\/+$/, '');
-const [cmd, rawName] = args;
+const progFlag = flag('--programma');
+const [cmd, rawName, rawProg] = args;
 const name = (rawName || '').trim().toLowerCase();
 
 const say = s => process.stdout.write(s + '\n');
@@ -55,6 +58,24 @@ async function call(p, body) {
   if (!r.ok) fail(j.error || ('Errore ' + r.status + ' da ' + site));
   return j;
 }
+// Programmi disponibili: letti da public/data.js
+function programs() {
+  const win = {};
+  new Function('window', fs.readFileSync(path.join(here, 'public', 'data.js'), 'utf8'))(win);
+  return win.FitData.PROGRAMS;
+}
+function checkProgram(id) {
+  const P = programs();
+  if (!P[id]) fail('Programma "' + id + '" sconosciuto. Disponibili: ' + Object.keys(P).join(', '));
+  return P[id];
+}
+// Entra come l'utente (serve la sua password) per impostare i suoi dati, poi esce
+async function asUser(user, pass, fn) {
+  const post = (p, body, tok) => fetch(site + '/api' + p, { method: p === '/data' ? 'PUT' : (p === '/me' ? 'GET' : 'POST'), headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { Authorization: 'Bearer ' + tok } : {}), body: body ? JSON.stringify(body) : undefined }).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) fail(j.error || 'Errore ' + r.status); return j; });
+  const login = await post('/login', { user, pass });
+  try { await fn({ data: login.data || {}, save: d => post('/data', { data: d }, login.token) }); }
+  finally { await post('/logout', null, login.token).catch(() => {}); }
+}
 async function newPassword() {
   if (process.env.STARFIT_PASS) return process.env.STARFIT_PASS;
   const a = await ask('Password per ' + name + ': ', true);
@@ -72,11 +93,29 @@ if (cmd === 'elenco') {
   const { users } = await call('users');
   if (!users.length) say('Nessun account.');
   users.forEach(u => say('  • ' + u.name + '   (creato il ' + new Date(u.created).toLocaleDateString('it-IT') + ')'));
+} else if (cmd === 'programmi') {
+  const P = programs();
+  Object.values(P).forEach(p => say('  • ' + p.id + '   ' + p.name));
 } else if (cmd === 'crea' || cmd === 'password') {
-  if (!name) fail('Scrivi il nome: node admin.mjs ' + cmd + ' <nome>');
+  if (!name) fail('Scrivi il nome: node admin.mjs ' + cmd + ' <nome>' + (cmd === 'crea' ? ' --programma <id>' : ''));
+  const progId = (progFlag || 'terzino').trim().toLowerCase();
+  const prog = cmd === 'crea' ? checkProgram(progId) : null;
   const pass = await newPassword();
   await call(cmd === 'crea' ? 'create' : 'password', { user: name, pass });
-  say(cmd === 'crea' ? '✔ Account "' + name + '" creato. Parte con la scheda completa.' : '✔ Password di "' + name + '" cambiata. Le sessioni aperte sono state chiuse.');
+  if (cmd === 'crea') {
+    await asUser(name, pass, ({ data, save }) => save(Object.assign({}, data, { program: progId })));
+    say('✔ Account "' + name + '" creato con il programma "' + prog.name + '".');
+  } else say('✔ Password di "' + name + '" cambiata. Le sessioni aperte sono state chiuse.');
+} else if (cmd === 'programma') {
+  if (!name || !rawProg) fail('Scrivi nome e programma: node admin.mjs programma <nome> <id>');
+  const progId = rawProg.trim().toLowerCase(), prog = checkProgram(progId);
+  const pass = process.env.STARFIT_PASS || await ask('Password di ' + name + ': ', true);
+  await asUser(name, pass, ({ data, save }) => {
+    const d = Object.assign({}, data, { program: progId });
+    if (data.program !== progId) { delete d.plan; delete d.done; delete d.sets; } // scheda nuova: si riparte puliti
+    return save(d);
+  });
+  say('✔ "' + name + '" ora usa il programma "' + prog.name + '". Si aggiorna alla prossima apertura dell\'app.');
 } else if (cmd === 'elimina') {
   if (!name) fail('Scrivi il nome: node admin.mjs elimina <nome>');
   if (!yes) {
@@ -86,7 +125,7 @@ if (cmd === 'elenco') {
   await call('delete', { user: name });
   say('✔ Account "' + name + '" eliminato.');
 } else {
-  say('Comandi:\n  node admin.mjs elenco\n  node admin.mjs crea <nome>\n  node admin.mjs password <nome>\n  node admin.mjs elimina <nome>\nAggiungi --sito https://tuosito.netlify.app per il sito online.');
+  say('Comandi:\n  node admin.mjs elenco\n  node admin.mjs programmi\n  node admin.mjs crea <nome> --programma <id>\n  node admin.mjs programma <nome> <id>\n  node admin.mjs password <nome>\n  node admin.mjs elimina <nome>\nAggiungi --sito https://starfitplus.netlify.app per il sito online.');
 }
 }
 main().catch(e => { if (!(e instanceof Stop)) process.stderr.write('✖ ' + (e && e.message || e) + '\n'); process.exitCode = 1; });

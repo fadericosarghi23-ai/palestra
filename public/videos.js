@@ -37,5 +37,18 @@ window.FitVideos = {
   buttkick: { id: "xRjl6d9mtCo", ch: "focusnfly" },
   cmj: { id: "MshBlueDsDk", ch: "MikeMitchellProspect" },
   accel: { id: "-7N_qYX2wuU", ch: "Unisport" },
-  foam: { id: "78ZE9Dznsfg", ch: "Meglio TV" }
+  foam: { id: "78ZE9Dznsfg", ch: "Meglio TV" },
+  gobletsquat: { id: "jnm_rsBb1Gc", ch: "Invictus Club Torino", it: true },
+  latpull: { id: "P8QKoy5sjv8", ch: "Project inVictus", it: true },
+  backext: { id: "YGUOyLf6BUg", ch: "Hailspt" },
+  plank: { id: "Is-7PPaBcsM", ch: "Project inVictus", it: true },
+  rdl: { id: "_ml0wRUcIRE", ch: "Project inVictus", it: true },
+  seatedrow: { id: "qaR7MJw1AOY", ch: "Project inVictus", it: true },
+  kickback: { id: "SlUzD2521sM", ch: "AIPT Accademia Italiana Personal Trainer", it: true },
+  revcrunch: { id: "NcjNbLiTUlE", ch: "Project inVictus", it: true },
+  stepup: { id: "6O0z-iLxwC4", ch: "Project inVictus", it: true },
+  abduction: { id: "9XeVkIdsz9E", ch: "Lamia D'Amico", it: true },
+  sideplank: { id: "SzKsA7HdzKc", ch: "P4P Italia", it: true },
+  catcow: { id: "SMAYXfZn_6M", ch: "Dott. Marco Segina", it: true },
+  tspine: { id: "eIN6PANljmY", ch: "Dott. Marco Segina", it: true }
 };

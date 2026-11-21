@@ -220,7 +220,82 @@ window.FitData = (function () {
       steps: ["Siediti con il rullo sotto i femorali, mani a terra dietro di te.",
         "Fai rotolare il rullo lentamente dal ginocchio al gluteo.",
         "Fermati 10–20″ sui punti più tesi. Poi passa a quadricipiti, polpacci e glutei: circa 1′ per zona."],
-      err: ["Andare veloce", "Rullare sulla zona lombare o direttamente su un dolore acuto"], yt: "foam roller hamstrings" }
+      err: ["Andare veloce", "Rullare sulla zona lombare o direttamente su un dolore acuto"], yt: "foam roller hamstrings" },
+
+    // ===== Glutei, addome e schiena =====
+    gobletsquat: { name: "Goblet squat", cat: "Forza", mus: ["Glutei", "Quadricipiti", "Core"],
+      steps: ["Tieni un manubrio in verticale contro il petto, con entrambe le mani sotto la testa del manubrio.",
+        "Piedi poco più larghi delle anche, punte leggermente aperte.",
+        "Scendi portando il sedere indietro e in basso, gomiti tra le ginocchia, petto alto.",
+        "Risali spingendo il pavimento con tutto il piede."],
+      err: ["Talloni che si alzano", "Ginocchia che crollano verso l'interno"], yt: "goblet squat" },
+    latpull: { name: "Lat machine", cat: "Schiena", mus: ["Dorsali", "Bicipiti", "Spalle"],
+      steps: ["Siediti con le cosce bloccate sotto i cuscinetti, presa poco più larga delle spalle.",
+        "Petto in fuori e spalle basse, lontane dalle orecchie.",
+        "Tira la barra verso la parte alta del petto portando i gomiti verso i fianchi.",
+        "Risali lenta fino a braccia quasi tese."],
+      err: ["Tirare dietro la nuca", "Dondolare indietro con il busto per aiutarti"], yt: "lat machine" },
+    backext: { name: "Iperestensioni a 45° per i glutei", cat: "Glutei", mus: ["Glutei", "Femorali", "Lombari"],
+      steps: ["Sulla panca a 45°, il cuscinetto appena sotto le anche, talloni bloccati.",
+        "Punte dei piedi leggermente aperte e schiena un po' arrotondata: così lavorano i glutei.",
+        "Scendi piegandoti alle anche, poi risali stringendo i glutei fino al corpo in linea.",
+        "In alto non inarcare la schiena: fermati quando il corpo è dritto."],
+      err: ["Salire troppo e inarcare la zona lombare", "Andare veloce di slancio"], yt: "hyperextension glutei" },
+    plank: { name: "Plank", cat: "Core", mus: ["Addominali", "Core", "Spalle"],
+      steps: ["Avambracci a terra con i gomiti sotto le spalle, gambe tese sulle punte.",
+        "Stringi glutei e addominali: il corpo è una linea dritta dalla testa ai talloni.",
+        "Respira normalmente e tieni la posizione."],
+      err: ["Sedere troppo in alto o pancia che cede verso il basso", "Trattenere il respiro"], yt: "plank" },
+    sideplank: { name: "Plank laterale", cat: "Core", view: "frontale", mus: ["Obliqui", "Gluteo medio", "Spalle"],
+      steps: ["Di fianco, appoggiata sull'avambraccio con il gomito sotto la spalla, gambe tese una sopra l'altra.",
+        "Solleva il bacino finché il corpo è dritto dalla testa ai piedi.",
+        "Tieni la posizione respirando, poi cambia lato. Più facile: ginocchia piegate a terra."],
+      err: ["Bacino che cede verso il basso", "Busto che ruota in avanti"], yt: "plank laterale" },
+    rdl: { name: "Stacco rumeno con manubri", cat: "Glutei", mus: ["Glutei", "Femorali", "Schiena"],
+      steps: ["In piedi, piedi alla larghezza delle anche, un manubrio per mano davanti alle cosce.",
+        "Ginocchia appena piegate e ferme: spingi il sedere indietro e scendi con la schiena dritta.",
+        "I manubri scorrono vicini alle gambe fino a metà tibia, dove senti tirare dietro le cosce.",
+        "Risali spingendo le anche in avanti e stringendo i glutei."],
+      err: ["Schiena curva", "Piegare troppo le ginocchia: diventa uno squat"], yt: "stacco rumeno manubri" },
+    seatedrow: { name: "Pulley basso", cat: "Schiena", mus: ["Dorsali", "Romboidi", "Bicipiti"],
+      steps: ["Seduta con i piedi sulla pedana e le ginocchia appena piegate, maniglia stretta.",
+        "Busto dritto, petto in fuori.",
+        "Tira la maniglia verso la pancia portando i gomiti indietro e stringendo le scapole.",
+        "Torna lenta allungando le braccia, senza piegarti in avanti."],
+      err: ["Dondolare avanti e indietro con il busto", "Spalle che salgono verso le orecchie"], yt: "pulley basso" },
+    kickback: { name: "Slanci al cavo per i glutei", cat: "Glutei", mus: ["Grande gluteo"],
+      steps: ["Cavigliera al cavo basso, mani appoggiate alla macchina, busto leggermente inclinato.",
+        "Gamba di appoggio un po' piegata, addome stretto.",
+        "Spingi la gamba indietro e un po' in alto stringendo il gluteo, senza inarcare la schiena.",
+        "Torna lenta. Fai tutte le ripetizioni e poi cambia gamba."],
+      err: ["Inarcare la schiena per salire di più", "Dare slancio invece di controllare"], yt: "slanci al cavo glutei" },
+    revcrunch: { name: "Crunch inverso", cat: "Core", mus: ["Addominali", "Addominali bassi"],
+      steps: ["A pancia in su, braccia lungo i fianchi, anche e ginocchia piegate a 90°.",
+        "Porta le ginocchia verso il petto sollevando il bacino da terra di pochi centimetri.",
+        "Scendi lentamente senza appoggiare del tutto i piedi."],
+      err: ["Slanciarsi con le gambe", "Spingere con le mani a terra"], yt: "crunch inverso" },
+    stepup: { name: "Step-up su panca", cat: "Glutei", mus: ["Glutei", "Quadricipiti"],
+      steps: ["Davanti a una panca o un gradino all'altezza del ginocchio, un manubrio per mano se vuoi.",
+        "Appoggia tutto il piede sul gradino e porta il busto un po' in avanti.",
+        "Sali spingendo solo con la gamba sopra, senza darti la spinta con quella a terra.",
+        "Scendi lenta e fai tutte le ripetizioni con la stessa gamba."],
+      err: ["Spingere con il piede rimasto a terra", "Ginocchio che crolla verso l'interno"], yt: "step up glutei" },
+    abduction: { name: "Abduzioni da seduta", cat: "Glutei", view: "frontale", mus: ["Gluteo medio", "Gluteo minimo"],
+      steps: ["Seduta sul bordo della panca con una mini-band sopra le ginocchia, oppure alla macchina abduttori.",
+        "Busto leggermente inclinato in avanti, mani sulla panca.",
+        "Apri le ginocchia più che puoi e tieni 1″, poi richiudi lenta senza far scattare l'elastico."],
+      err: ["Andare veloce", "Usare le mani per aiutarti"], yt: "abduzioni da seduta" },
+    catcow: { name: "Gatto-cammello", cat: "Mobilità", mus: ["Schiena", "Colonna"],
+      steps: ["A quattro zampe, mani sotto le spalle e ginocchia sotto le anche.",
+        "Inspira e lascia scendere la pancia, sguardo in avanti (cammello).",
+        "Espira e arrotonda la schiena verso il soffitto, mento al petto (gatto).",
+        "Movimento lento, vertebra per vertebra."],
+      err: ["Muovere solo il collo", "Andare veloce"], yt: "gatto cammello" },
+    tspine: { name: "Rotazione toracica a quattro zampe", cat: "Mobilità", mus: ["Schiena alta", "Torace"],
+      steps: ["A quattro zampe, una mano dietro la testa.",
+        "Porta il gomito verso il braccio a terra, poi ruota e aprilo verso il soffitto seguendolo con lo sguardo.",
+        "Il bacino resta fermo: ruota solo la parte alta della schiena."],
+      err: ["Ruotare anche il bacino", "Spingere forte a fine movimento"], yt: "rotazione toracica" }
   };
 
   const MOB = [
@@ -298,5 +373,118 @@ window.FitData = (function () {
     ["Stanotte", "Dormi 8 ore o più: il recupero comincia qui. Domani la cyclette leggera aiuta."]
   ];
 
-  return { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS };
+
+  /* ===== Programmi: ogni account ne ha uno (campo "program" nei dati) ===== */
+  const GLUTEI_DAYS = [
+    { id: "lun", d: "Lunedì", md: "Giorno A", type: "gym", label: "Palestra A", title: "Glutei e schiena", dur: "55–60′",
+      goal: "Il giorno più importante della settimana: hip thrust pesante per i glutei, lat machine per la schiena e addome per finire.",
+      items: [
+        { b: "warm", ex: "mbwalk", s: "2 × 12 passi", per: "per lato", r: "30″" },
+        { b: "warm", ex: "bridge", s: "2 × 12", r: "30″" },
+        { b: "main", ex: "hipthrust", s: "4 × 8–10", r: "90″", note: "Pesante ma con tecnica perfetta: spingi con i talloni" },
+        { b: "main", ex: "gobletsquat", s: "3 × 10", r: "75″" },
+        { b: "main", ex: "latpull", s: "3 × 10–12", r: "75″", note: "Petto in fuori, gomiti verso i fianchi" },
+        { b: "main", ex: "backext", s: "3 × 12", r: "60″", note: "Senti lavorare i glutei, non la schiena" },
+        { b: "end", ex: "deadbug", s: "3 × 8", per: "per lato", r: "45″" },
+        { b: "end", ex: "plank", s: "3 × 30″", r: "45″", hold: 30 }
+      ] },
+    { id: "mar", d: "Martedì", md: "Recupero", type: "rest", label: "Riposo", title: "Riposo e mobilità" },
+    { id: "mer", d: "Mercoledì", md: "Giorno B", type: "gym", label: "Palestra B", title: "Glutei, femorali e schiena", dur: "55′",
+      goal: "Stacco rumeno e affondi per glutei e femorali, pulley per la schiena e addome per chiudere.",
+      items: [
+        { b: "warm", ex: "mbwalk", s: "2 × 12 passi", per: "per lato", r: "30″" },
+        { b: "warm", ex: "catcow", s: "1 × 10", r: "—" },
+        { b: "main", ex: "rdl", s: "4 × 10", r: "90″", note: "Sedere indietro, manubri vicini alle gambe" },
+        { b: "main", ex: "bulgarian", s: "3 × 8", per: "per gamba", r: "75″", note: "Busto un po' in avanti per far lavorare di più il gluteo" },
+        { b: "main", ex: "seatedrow", s: "3 × 12", r: "75″" },
+        { b: "main", ex: "kickback", s: "3 × 12", per: "per gamba", r: "45″" },
+        { b: "end", ex: "pallof", s: "3 × 10", per: "per lato", r: "45″" },
+        { b: "end", ex: "revcrunch", s: "3 × 12", r: "45″" }
+      ] },
+    { id: "gio", d: "Giovedì", md: "Recupero", type: "rest", label: "Riposo", title: "Riposo e mobilità" },
+    { id: "ven", d: "Venerdì", md: "Giorno C", type: "gym", label: "Palestra C", title: "Glutei a volume e core", dur: "50′",
+      goal: "Più ripetizioni con carichi medi: il gluteo lavora a lungo e prende forma. Schiena e fianchi per la postura.",
+      items: [
+        { b: "warm", ex: "mbwalk", s: "2 × 12 passi", per: "per lato", r: "30″" },
+        { b: "warm", ex: "bridge", s: "2 × 15", r: "30″" },
+        { b: "main", ex: "stepup", s: "3 × 10", per: "per gamba", r: "60″", note: "Spingi solo con la gamba sul gradino" },
+        { b: "main", ex: "hipthrust", s: "3 × 12–15", r: "60″", note: "Più leggero di lunedì, 2″ di pausa in alto" },
+        { b: "main", ex: "abduction", s: "3 × 15–20", r: "45″" },
+        { b: "main", ex: "dbrow", s: "3 × 10", per: "per lato", r: "60″" },
+        { b: "end", ex: "sideplank", s: "3 × 25″", per: "per lato", r: "30″", hold: 25 },
+        { b: "end", ex: "deadbug", s: "2 × 10", per: "per lato", r: "45″" }
+      ] },
+    { id: "sab", d: "Sabato", md: "Recupero", type: "rest", label: "Riposo attivo", title: "Camminata e mobilità" },
+    { id: "dom", d: "Domenica", md: "Recupero", type: "rest", label: "Riposo", title: "Riposo completo" }
+  ];
+  const GLUTEI_MOB = [
+    { ex: "catcow", s: "10 lente" }, { ex: "tspine", s: "8 per lato" }, { ex: "m9090", s: "6 cambi per lato" },
+    { ex: "couch", s: "40″ per lato", hold: 40 }, { ex: "hipcars", s: "5 per lato" }, { ex: "wgs", s: "4 per lato" }, { ex: "rockback", s: "10 per lato" }
+  ];
+
+  const PROGRAMS = {
+    terzino: {
+      id: "terzino", name: "Terzino",
+      eyebrow: "Scheda settimanale · Terzino",
+      lede: "Tre sedute in palestra, due in campo con la squadra, attivazione il giorno prima della partita e mobilità ogni giorno. Obiettivo: più veloce, più asciutto, più solido nei contrasti.",
+      stats: [["1,85 m", "Altezza"], ["85 kg", "Oggi"], ["80–82 kg", "Obiettivo", true]],
+      heroAnim: "accel",
+      pillars: [["Più", "veloce", "Forza pesante il mercoledì, salti e partenze il venerdì: più spinta nei primi 10 metri."],
+        ["Più", "asciutto", "Deficit di 400–500 kcal e proteine alte: perdi grasso senza perdere esplosività."],
+        ["Più", "solido", "Spinte, trazioni, core anti-rotazione e prevenzione: vinci i contrasti e resti in campo."]],
+      note: "<b>Partita la domenica.</b> Se giochi il sabato sposta tutto indietro di un giorno. Regole fisse: la palestra pesante per le gambe ad almeno 3 giorni dalla partita, il giorno prima solo attivazione.",
+      footer: "Scheda personale per terzino · 1,85 m · 85 kg. Se senti dolore all'inguine o ai femorali che non passa, fermati e fatti vedere da un fisioterapista.",
+      days: DAYS, mob: MOB,
+      tips: { field: FIELD_TIPS, match: MATCH_TIPS },
+      testDay: 2,
+      calNote: "Test il mercoledì delle settimane 1, 4, 8 e 12, all'inizio della Palestra B dopo il riscaldamento. Durante le feste (21 dicembre – 10 gennaio) il campionato di solito si ferma: tieni le 3 palestre e sostituisci le sedute con la squadra con 20–30′ di corsa e partenze.",
+      plan: {
+        intro: "Progressione, test e cosa mangiare. Senza la dieta la scheda da sola non basta.",
+        progress: "Settimane 1–3: aumenta il carico del 2,5–5% sugli esercizi principali quando completi tutte le ripetizioni bene. Settimana 4: stessi esercizi, metà delle serie e carico più leggero.",
+        bars: ["100%", "+2,5–5%", "+2,5–5%"],
+        nums: [["2.500–2.700", "kcal al giorno (circa −400/500)", true], ["160–180 g", "proteine, su 4 pasti"], ["−0,4/0,6 kg", "a settimana, non di più"], ["7–9 ore", "di sonno"]],
+        list: ["Carboidrati concentrati nei giorni di campo, mercoledì, sabato e domenica; un po' meno il lunedì.",
+          "Obiettivo 80–82 kg entro il traguardo, con più muscolo: non devi diventare leggero, devi diventare denso."],
+        tests: ["Sprint 10 m (s)", "Sprint 30 m (s)", "Salto in lungo (cm)", "Peso (kg)", "Giro vita (cm)"],
+        testHint: "Cronometra gli sprint sempre sulla stessa superficie.",
+        rules: ["<b>Tecnica prima del carico</b>, soprattutto su stacco e nordic.", "Se una settimana sei distrutto, salta la Palestra C, non la partita.", "Un dolore all'inguine o ai femorali che non passa va fatto vedere a un fisioterapista, non allenato sopra."]
+      }
+    },
+    glutei: {
+      id: "glutei", name: "Glutei, addome e schiena",
+      eyebrow: "Scheda settimanale · Glutei, addome e schiena",
+      lede: "Tre sedute in palestra: lunedì, mercoledì e venerdì. Gli altri giorni riposo e mobilità. Obiettivo: glutei più forti e tonici, addome solido e schiena dritta, migliorando il fisico senza stravolgerlo.",
+      stats: [["1,67 m", "Altezza"], ["51 kg", "Oggi"], ["3 sedute", "A settimana", true]],
+      heroAnim: "hipthrust",
+      pillars: [["Glutei", "più forti", "Hip thrust, stacco rumeno e affondi tre volte a settimana, con carichi che salgono piano."],
+        ["Addome", "solido", "Plank, dead bug e anti-rotazione: pancia più piatta e schiena protetta."],
+        ["Schiena", "dritta", "Lat machine, pulley e rematore: spalle aperte e postura migliore."]],
+      note: "<b>Allenamenti lunedì, mercoledì e venerdì.</b> Se salti un giorno, spostalo a quello dopo: lascia sempre almeno un giorno di riposo tra due sedute.",
+      footer: "Scheda personale · 1,67 m · 51 kg. Se senti dolore alla schiena o alle ginocchia che non passa, fermati e chiedi a un fisioterapista.",
+      days: GLUTEI_DAYS, mob: GLUTEI_MOB,
+      tips: {
+        rest: [["Mobilità", "10′ di mobilità: schiena e anche più libere, meno rigidità domani."],
+          ["Muoviti", "Una camminata di 20–40′ aiuta il recupero e non toglie risultati."],
+          ["Proteine", "Anche oggi circa 90–100 g in tutta la giornata: il muscolo si costruisce adesso."],
+          ["Sonno", "7–9 ore: è mentre dormi che glutei e schiena diventano più forti."]]
+      },
+      testDay: 0,
+      calNote: "Test il lunedì delle settimane 1, 4, 8 e 12, all'inizio del Giorno A dopo il riscaldamento. Se durante le feste salti una seduta, riparti dalla successiva: non serve recuperare.",
+      plan: {
+        intro: "Progressione, test e cosa mangiare per migliorare il fisico senza stravolgerlo.",
+        progress: "Settimane 1–3: quando completi tutte le ripetizioni con tecnica perfetta, aumenta il carico di 1–2,5 kg (su hip thrust e stacco rumeno anche 5 kg). Settimana 4: stessi esercizi, metà delle serie e carico più leggero.",
+        bars: ["Base", "+1–2,5 kg", "+1–2,5 kg"],
+        nums: [["1.900–2.100", "kcal al giorno: mantenimento o poco sopra", true], ["90–100 g", "proteine, su 3–4 pasti"], ["Peso stabile", "va bene anche +1 kg in 3 mesi (muscolo)"], ["7–9 ore", "di sonno"]],
+        list: ["Non metterti a dieta: per migliorare glutei e schiena senza stravolgere il fisico servono energia e proteine. Mangiare troppo poco fa perdere muscolo, non forma.",
+          "Proteine a ogni pasto: yogurt greco, uova, carne o pesce, legumi, latticini.",
+          "Carboidrati intorno all'allenamento: pane, riso, pasta, frutta.",
+          "I risultati si vedono dalla forma e dalla forza più che dalla bilancia: misura fianchi e vita ogni 4 settimane."],
+        tests: ["Hip thrust (kg × 10)", "Plank (secondi)", "Fianchi (cm)", "Vita (cm)", "Peso (kg)"],
+        testHint: "Misura fianchi e vita sempre al mattino, nello stesso punto.",
+        rules: ["<b>Tecnica prima del carico</b>, soprattutto su hip thrust e stacco rumeno.", "Devi sentire lavorare i glutei, non la schiena: se senti la zona lombare, togli peso e riguarda il video.", "Un dolore alla schiena bassa o alle ginocchia che non passa va fatto vedere a un fisioterapista, non allenato sopra."]
+      }
+    }
+  };
+
+  return { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS, PROGRAMS };
 })();

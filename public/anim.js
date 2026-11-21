@@ -9,7 +9,7 @@
   const lerp = (a, b, u) => a + (b - a) * u;
   const lerp2 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u)];
   const mid = (a, b) => lerp2(a, b, 0.5);
-  const KEYS = ['head', 'neck', 'hip', 'shN', 'shF', 'hpN', 'hpF', 'elN', 'haN', 'elF', 'haF', 'knN', 'anN', 'toN', 'knF', 'anF', 'toF'];
+  const KEYS = ['head', 'neck', 'hip', 'mid', 'shN', 'shF', 'hpN', 'hpF', 'elN', 'haN', 'elF', 'haF', 'knN', 'anN', 'toN', 'knF', 'anF', 'toF'];
 
   function fk(p, front) {
     const J = {};
@@ -47,6 +47,7 @@
     if (!J.shF) J.shF = J.neck.slice();
     if (!J.hpN) J.hpN = J.hip.slice();
     if (!J.hpF) J.hpF = J.hip.slice();
+    if (!J.mid) J.mid = mid(J.hip, J.neck); // punto a metà schiena: serve per inarcare/arrotondare
     return J;
   }
   function ik(A, C, l1, l2, score) {
@@ -343,6 +344,64 @@
   ANIM.foam = { props: [{ k: 'roller', x: 150, y: 192, r: 8 }], frames: [
     a(-143, [-5, -5], [-5, -5], foamL, foamL, 'hip', [110, 182], { h: -150, hold: 0.2, d: 1.6 }),
     a(-143, [-28, -28], [-28, -28], foamL, foamL, 'hip', [135, 182], { h: -150, hold: 0.2, d: 1.6 })] };
+
+  // ===== Glutei, addome e schiena =====
+  ANIM.gobletsquat = { props: [{ k: 'db', at: 'haN' }], frames: [
+    a(178, [30, 165], [30, 165], STAND, STAND, 'anN', [120, 196], { hold: 0.4, d: 1.3 }),
+    a(160, [30, 165], [30, 165], [85, -30, 85], [85, -30, 85], 'anN', [120, 196], { hold: 0.2, d: 1.0 })] };
+
+  ANIM.latpull = { props: [{ k: 'bench', x: 66, y: 156, w: 64 }, { k: 'cable', a: 'haN', b: [104, 0] }, { k: 'pad', at: 'knN' }], frames: [
+    a(186, [176, 180], [176, 180], [90, 0, 90], [90, 0, 90], 'hip', [100, 150], { h: 180, hold: 0.3, d: 1.0 }),
+    a(190, [15, 172], [15, 172], [90, 0, 90], [90, 0, 90], 'hip', [100, 150], { h: 182, hold: 0.3, d: 1.3 })] };
+
+  const beL = [-45, -45, 30];
+  ANIM.backext = { props: [{ k: 'line', x1: 107, y1: 151, x2: 136, y2: 123, w: 9 }, { k: 'line', x1: 121, y1: 140, x2: 132, y2: 200, w: 4 }, { k: 'line', x1: 50, y1: 186, x2: 62, y2: 200, w: 4 }, { k: 'pad', at: 'anN', dx: -6, dy: -6 }], frames: [
+    a(135, [305, 165], [305, 165], beL, beL, 'anN', [55, 192], { hold: 0.5, d: 1.3 }),
+    a(30, [200, 60], [200, 60], beL, beL, 'anN', [55, 192], { hold: 0.2, d: 1.1 })] };
+
+  ANIM.plank = { frames: [
+    a(96, [0, 90], [0, 90], [-84, -84, 0], [-84, -84, 0], 'elN', [172, 196], { h: 100, hold: 1.2, d: 1.4 }),
+    a(95, [0, 90], [0, 90], [-85, -85, 0], [-85, -85, 0], 'elN', [172, 196], { h: 98, hold: 1.2, d: 1.4 })] };
+
+  ANIM.sideplank = { frames: [
+    a(-102, [0, -90], [180, 180], [78, 78, 100], [78, 78, 100], 'elN', [60, 196], { hold: 1.0, d: 1.2 }),
+    a(-100, [0, -90], [180, 180], [80, 80, 100], [80, 80, 100], 'elN', [60, 196], { hold: 1.0, d: 1.2 })] };
+
+  ANIM.rdl = { props: [{ k: 'db', at: 'haF', far: true }, { k: 'db', at: 'haN' }], frames: [
+    a(178, [0, 0], [-2, 0], STAND, STAND, 'anN', [120, 196], { hold: 0.5, d: 1.4 }),
+    a(110, [0, 0], [0, 0], [35, -3, 85], [35, -3, 85], 'anN', [120, 196], { h: 115, hold: 0.3, d: 1.1 })] };
+
+  const srL = [85, 95, 175];
+  ANIM.seatedrow = { props: [{ k: 'bench', x: 58, y: 164, w: 62 }, { k: 'line', x1: 186, y1: 140, x2: 186, y2: 200, w: 6 }, { k: 'roller', x: 226, y: 128, r: 6 }, { k: 'cable', a: 'haN', b: [226, 128] }], frames: [
+    a(168, [85, 90], [85, 90], srL, srL, 'hip', [90, 160], { hold: 0.3, d: 1.0 }),
+    a(182, [-15, 90], [-15, 90], srL, srL, 'hip', [90, 160], { hold: 0.4, d: 1.3 })] };
+
+  ANIM.kickback = { props: [{ k: 'post', x: 192 }, { k: 'cable', a: 'anN', b: [192, 190] }], frames: [
+    a(158, [80, 90], [78, 90], [5, 0, 85], [2, 0, 85], 'anF', [110, 196], { hold: 0.3, d: 0.8 }),
+    a(158, [80, 90], [78, 90], [-40, -45, 40], [2, 0, 85], 'anF', [110, 196], { hold: 0.5, d: 1.1 })] };
+
+  ANIM.revcrunch = { frames: [
+    a(-90, [90, 90], [90, 90], [180, 90, 180], [180, 90, 180], 'neck', [60, 186], { h: -90, hold: 0.3, d: 0.9 }),
+    a(-76, [90, 90], [90, 90], [215, 120, 190], [215, 120, 190], 'neck', [60, 186], { h: -88, hold: 0.4, d: 1.2 })] };
+
+  ANIM.stepup = { props: [{ k: 'box', x: 140, y: 176, w: 62 }], frames: [
+    a(165, [10, 0], [-10, 0], [85, -15, 85], [-45, 25, 85], 'anN', [160, 172], { hold: 0.3, d: 1.0 }),
+    a(178, [5, 0], [-5, 0], [2, 0, 85], [2, 0, 85], 'anN', [160, 172], { hold: 0.4, d: 1.1 })] };
+
+  const abBase = { head: [120, 78], neck: [120, 94], hip: [120, 150], shN: [132, 98], shF: [108, 98], hpN: [128, 150], hpF: [112, 150], elN: [142, 124], haN: [150, 152], elF: [98, 124], haF: [90, 152], anN: [130, 196], toN: [138, 198], anF: [110, 196], toF: [102, 198] };
+  ANIM.abduction = { mode: 'pts', view: 'front', props: [{ k: 'bench', x: 82, y: 154, w: 76 }, { k: 'band', a: ['knN', 'hpN', 0.12], b: ['knF', 'hpF', 0.12], w: 4 }], frames: [
+    { pts: Object.assign({}, abBase, { knN: [128, 170], knF: [112, 170] }), hold: 0.2, d: 0.6 },
+    { pts: Object.assign({}, abBase, { knN: [162, 166], knF: [78, 166] }), hold: 0.5, d: 1.0 }] };
+
+  const qLegs = { hip: [92, 148], knN: [94, 192], anN: [52, 194], toN: [42, 198], knF: [92, 192], anF: [50, 194], toF: [40, 198], elN: [151, 169], haN: [152, 196], elF: [149, 169], haF: [148, 196] };
+  ANIM.catcow = { mode: 'pts', frames: [
+    { pts: Object.assign({}, qLegs, { mid: [121, 162], neck: [150, 142], head: [164, 128] }), hold: 0.8, d: 1.3 },
+    { pts: Object.assign({}, qLegs, { mid: [121, 122], neck: [150, 146], head: [156, 162] }), hold: 0.8, d: 1.3 }] };
+
+  const tsBase = { hip: [92, 148], neck: [150, 142], knN: [94, 192], anN: [52, 194], toN: [42, 198], knF: [92, 192], anF: [50, 194], toF: [40, 198], elF: [149, 169], haF: [148, 196] };
+  ANIM.tspine = { mode: 'pts', frames: [
+    { pts: Object.assign({}, tsBase, { head: [160, 155], elN: [146, 166], haN: [158, 140] }), hold: 0.4, d: 1.2 },
+    { pts: Object.assign({}, tsBase, { head: [167, 128], elN: [152, 113], haN: [162, 134] }), hold: 0.8, d: 1.2 }] };
 
   root.FitAnim = { ANIM, evaluate, prepare, mid, lerp2 };
 })(typeof window !== 'undefined' ? window : globalThis);

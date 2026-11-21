@@ -584,6 +584,10 @@ body.auth-mode > header, body.auth-mode > #hero, body.auth-mode > main, body.aut
   .brand { margin-right: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .ed-row.saved { animation: none; } }
+
+/* Giorni di riposo */
+.chip.rest::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: transparent; border: 1.5px solid var(--on-iron-muted); }
+@media (max-width: 760px) { .daystrip .ds-rest i { background: transparent; border: 1.5px dashed var(--ink-muted); } }
 </style>
 </head>
 <body>

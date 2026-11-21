@@ -1,13 +1,18 @@
 # starfit+
 
-Scheda di allenamento per terzino (1,85 m · 85 kg): 3 sedute in palestra, 2 in campo, attivazione il giorno prima della partita e mobilità ogni giorno. Dal 23 novembre 2026 al 14 febbraio 2027.
+App di allenamento con account personali: ogni account ha il suo programma. Dal 23 novembre 2026 al 14 febbraio 2027.
+
+| Programma | id | Per chi |
+|---|---|---|
+| Terzino | `terzino` | 3 palestre + 2 campo + attivazione pre-partita: velocità, forza nei contrasti, meno grasso |
+| Glutei, addome e schiena | `glutei` | 3 palestre (lun, mer, ven) + riposo e mobilità: glutei, addome e schiena senza stravolgere il fisico |
 
 Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche offline.
 
 ## Cosa contiene
 
 - account personali: si accede una volta e il telefono resta collegato
-- 38 esercizi con video YouTube, animazione, passi ed errori da evitare
+- 51 esercizi con video YouTube, animazione, passi ed errori da evitare
 - modifica degli esercizi per ogni giorno: serie, recupero, note, ordine, aggiunta e rimozione
 - contatore delle serie con timer di recupero automatico
 - timer di recupero rapido (30″–3′) e cronometro con giri
@@ -25,7 +30,7 @@ public/                 il sito: è l'unica cartella pubblicata
   index.html            pagina e stile
   app.js                interfaccia e modifica esercizi
   account.js            accesso e salvataggio nell'account
-  data.js               esercizi e settimana di base
+  data.js               esercizi e programmi (terzino, glutei)
   videos.js             video YouTube per esercizio
   anim.js               animazioni degli esercizi
   timer.js              timer di recupero e cronometro
@@ -68,13 +73,15 @@ e aggiornala anche su Netlify.
 ### Comandi
 
 ```
-node admin.mjs elenco --sito https://tuosito.netlify.app
-node admin.mjs crea federico --sito https://tuosito.netlify.app
-node admin.mjs password federico --sito https://tuosito.netlify.app
-node admin.mjs elimina federico --sito https://tuosito.netlify.app
+node admin.mjs programmi
+node admin.mjs elenco --sito https://starfitplus.netlify.app
+node admin.mjs crea elisa --programma glutei --sito https://starfitplus.netlify.app
+node admin.mjs programma elisa terzino --sito https://starfitplus.netlify.app
+node admin.mjs password elisa --sito https://starfitplus.netlify.app
+node admin.mjs elimina elisa --sito https://starfitplus.netlify.app
 ```
 
-La password viene chiesta nel terminale e non si vede mentre la scrivi. Ogni nuovo account parte con la scheda completa. Senza `--sito` i comandi lavorano sul server locale.
+La password viene chiesta nel terminale e non si vede mentre la scrivi. Senza `--programma` l'account parte con il programma `terzino`. Il comando `programma` cambia scheda a un account esistente (serve la sua password) e azzera serie e modifiche della scheda vecchia. Senza `--sito` i comandi lavorano sul server locale.
 
 ## Provarlo sul PC
 

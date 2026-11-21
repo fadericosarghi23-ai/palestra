@@ -1,13 +1,18 @@
 /* starfit+ — interfaccia (parte dopo l'accesso all'account) */
 window.FitAccount.whenReady(function () {
   const { ANIM, evaluate, prepare, mid } = window.FitAnim;
-  const { EX, MOB, DAYS: DAYS_SRC, FIELD_TIPS, MATCH_TIPS } = window.FitData;
+  const { EX, PROGRAMS } = window.FitData;
   const NS = 'http://www.w3.org/2000/svg';
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---------- dati salvati nell'account (vedi account.js) ---------- */
   const store = window.FitAccount.store;
+
+  /* Programma dell'account: lo sceglie chi crea l'account (admin.mjs crea <nome> --programma <id>) */
+  const PROG = PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
+  const MOB = PROG.mob, DAYS_SRC = PROG.days;
+  const foot = document.querySelector('footer .wrap'); if (foot) foot.textContent = PROG.footer;
 
   /* Scheda: quella di base, con le modifiche fatte dall'utente per ogni giorno.
      Ogni esercizio ha un uid stabile: serve per ricordare serie e "Fatto". */
@@ -57,6 +62,8 @@ window.FitAccount.whenReady(function () {
       case 'couch':
         el('rect', Object.assign({ x: p.x, y: p.y - 36, width: 14, height: 236 - p.y, rx: 4 }, soft), g);
         el('rect', Object.assign({ x: p.x, y: p.y, width: p.w, height: 200 - p.y, rx: 4 }, soft), g); break;
+      case 'line':
+        el('line', { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, stroke: 'var(--prop)', 'stroke-width': p.w || 4, 'stroke-linecap': 'round' }, g); break;
       case 'roller':
         el('circle', Object.assign({ cx: p.x, cy: p.y, r: p.r }, soft), g); break;
       case 'bike': {
@@ -78,6 +85,7 @@ window.FitAccount.whenReady(function () {
       case 'db': add(el('circle', { r: 7, fill: 'var(--prop)', opacity: p.far ? 0.55 : 1 }, g)); break;
       case 'trap': add(el('line', { stroke: 'var(--prop)', 'stroke-width': 3 }, g)); add(el('circle', { r: p.r, fill: 'var(--prop-soft)', stroke: 'var(--prop)', 'stroke-width': 2 }, g)); break;
       case 'band': add(el('line', { stroke: 'var(--fire-bright)', 'stroke-width': p.w || 2.5, 'stroke-linecap': 'round' }, g)); break;
+      case 'cable': add(el('line', { stroke: 'var(--prop)', 'stroke-width': 2, 'stroke-dasharray': '2 3' }, g)); break;
       case 'ball': add(el('circle', { r: p.r, fill: 'var(--fire)', stroke: 'var(--fire-bright)', 'stroke-width': 1.5 }, g)); break;
       case 'landmine': add(el('line', { stroke: 'var(--prop)', 'stroke-width': 4, 'stroke-linecap': 'round' }, g)); add(el('circle', { r: 12, fill: 'var(--prop-soft)', stroke: 'var(--prop)', 'stroke-width': 2 }, g)); add(el('rect', { width: 10, height: 6, fill: 'var(--prop)' }, g)); break;
       case 'sled': add(el('line', { stroke: 'var(--prop)', 'stroke-width': 4, 'stroke-linecap': 'round' }, g)); add(el('rect', { width: 40, height: 12, rx: 2, fill: 'var(--prop)' }, g)); add(el('circle', { r: 9, fill: 'var(--prop-soft)', stroke: 'var(--prop)', 'stroke-width': 2 }, g)); break;
@@ -94,7 +102,7 @@ window.FitAccount.whenReady(function () {
       case 'plate': { const j = J[p.at]; const x = j[0] + (p.dx || 0), y = j[1] + (p.dy || 0); setC(n[0], x, y); setC(n[1], x, y); break; }
       case 'db': setC(n[0], J[p.at][0], J[p.at][1]); break;
       case 'trap': { const h = J[p.at]; setL(n[0], h, [h[0], h[1] + p.dy]); setC(n[1], h[0], h[1] + p.dy); break; }
-      case 'band': setL(n[0], resolve(p.a, J), resolve(p.b, J)); break;
+      case 'band': case 'cable': setL(n[0], resolve(p.a, J), resolve(p.b, J)); break;
       case 'ball': { const b = ball || mid(J.haN, J.haF); setC(n[0], b[0], b[1]); break; }
       case 'landmine': {
         const h = J[p.at], t = p.to; setL(n[0], t, h);
@@ -103,11 +111,12 @@ window.FitAccount.whenReady(function () {
         n[2].setAttribute('x', t[0] - 5); n[2].setAttribute('y', t[1] - 3); break;
       }
       case 'sled': { const h = J[p.at]; setL(n[0], h, [h[0] + 2, 186]); n[1].setAttribute('x', (h[0] - 6).toFixed(1)); n[1].setAttribute('y', 186); setC(n[2], h[0] + 18, 177); break; }
-      case 'pad': { const j = J[p.at]; setC(n[0], j[0], j[1] - 8); break; }
+      case 'pad': { const j = J[p.at]; setC(n[0], j[0] + (p.dx || 0), j[1] + (p.dy == null ? -8 : p.dy)); break; }
       case 'crank': { if (J.pN) { setL(n[0], J.pN, J.pF); setC(n[1], 128, 172); } break; }
     }
   }
 
+  const STATIC_PROPS = ['bench', 'box', 'step', 'wall', 'post', 'bar', 'couch', 'roller', 'bike', 'line'];
   function buildFigure(svg, id, opts) {
     const A = prepare(ANIM[id]);
     svg.setAttribute('viewBox', '0 0 240 220');
@@ -118,7 +127,7 @@ window.FitAccount.whenReady(function () {
     }
     const props = A.props || [];
     const gs = el('g', {}, svg);
-    props.forEach(p => { if (['bench', 'box', 'step', 'wall', 'post', 'bar', 'couch', 'roller', 'bike'].includes(p.k)) drawStatic(gs, p); });
+    props.forEach(p => { if (STATIC_PROPS.includes(p.k)) drawStatic(gs, p); });
     const gBehind = el('g', {}, svg);
     const dyn = [];
     props.filter(p => p.behind).forEach(p => dyn.push(makeDynamic(gBehind, p)));
@@ -128,12 +137,12 @@ window.FitAccount.whenReady(function () {
       legN: limb('near', 7), head: el('circle', { r: 10.5, fill: 'var(--fig)' }, svg), armN: limb('near', 6)
     };
     const gFront = el('g', {}, svg);
-    props.filter(p => !p.behind && !['bench', 'box', 'step', 'wall', 'post', 'bar', 'couch', 'roller', 'bike'].includes(p.k)).forEach(p => dyn.push(makeDynamic(gFront, p)));
+    props.filter(p => !p.behind && !STATIC_PROPS.includes(p.k)).forEach(p => dyn.push(makeDynamic(gFront, p)));
     function draw(time) {
       const { J, ball } = evaluate(A, time);
       parts.legF.setAttribute('points', [J.hpF, J.knF, J.anF, J.toF].map(P).join(' '));
       parts.armF.setAttribute('points', [J.shF, J.elF, J.haF].map(P).join(' '));
-      parts.torso.setAttribute('points', [J.hip, J.neck].map(P).join(' '));
+      parts.torso.setAttribute('points', (J.mid ? [J.hip, J.mid, J.neck] : [J.hip, J.neck]).map(P).join(' '));
       if (parts.gird) parts.gird.setAttribute('points', [J.shF, J.shN, J.neck, J.hip, J.hpF, J.hpN].map(P).join(' '));
       parts.legN.setAttribute('points', [J.hpN, J.knN, J.anN, J.toN].map(P).join(' '));
       parts.armN.setAttribute('points', [J.shN, J.elN, J.haN].map(P).join(' '));
@@ -177,7 +186,7 @@ window.FitAccount.whenReady(function () {
   const ICON_PLAY = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="currentColor"/></svg>';
 
   /* ---------- componenti ---------- */
-  const TYPE_CHIP = { gym: 'gym', field: 'field', act: 'act', match: 'match' };
+  const TYPE_CHIP = { gym: 'gym', field: 'field', act: 'act', match: 'match', rest: 'rest' };
   const VIDEOS = window.FitVideos || {};
   let mediaMode = store.get('media', 'video');
   const ytUrl = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
@@ -288,7 +297,7 @@ window.FitAccount.whenReady(function () {
   const END = new Date(START.getTime() + (WEEKS * 7 - 1) * DAY);
   const fmt = (d, o) => d.toLocaleDateString('it-IT', o || { day: 'numeric', month: 'short' });
   const weekStart = n => new Date(START.getTime() + (n - 1) * 7 * DAY);
-  const testDate = n => new Date(weekStart(n).getTime() + 2 * DAY); // mercoledì
+  const testDate = n => new Date(weekStart(n).getTime() + (PROG.testDay || 0) * DAY); // giorno dei test del programma
   const TEST_WEEKS = [1, 4, 8, 12];
   function today0() { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
   function currentWeek() { const d = Math.floor((today0() - START) / DAY); return d < 0 ? 0 : d >= WEEKS * 7 ? WEEKS + 1 : Math.floor(d / 7) + 1; }
@@ -310,18 +319,18 @@ window.FitAccount.whenReady(function () {
     return `<section class="sec"><div class="sec-h"><div><h2>Il calendario</h2><p class="kicker">${fmt(START, { day: 'numeric', month: 'long', year: 'numeric' })} → ${fmt(END, { day: 'numeric', month: 'long', year: 'numeric' })} · 3 blocchi da 4 settimane</p></div></div>
       <p class="cal-status">${status}</p>
       <div class="cal">${cells}</div>
-      <p class="small">Test il mercoledì delle settimane 1, 4, 8 e 12, all'inizio della Palestra B dopo il riscaldamento. Durante le feste (21 dicembre – 10 gennaio) il campionato di solito si ferma: tieni le 3 palestre e sostituisci le sedute con la squadra con 20–30′ di corsa e partenze.</p></section>`;
+      <p class="small">${esc(PROG.calNote)}</p></section>`;
   }
 
   /* ---------- viste ---------- */
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
-      <div><p class="eyebrow">Scheda settimanale · Terzino</p>
+      <div><p class="eyebrow">${esc(PROG.eyebrow)}</p>
         <h1 class="brandname">starfit<span>+</span></h1>
-        <p class="lede">Tre sedute in palestra, due in campo con la squadra, attivazione il giorno prima della partita e mobilità ogni giorno. Obiettivo: più veloce, più asciutto, più solido nei contrasti.</p>
-        <div class="stats"><div class="stat"><b>1,85 m</b><span>Altezza</span></div><div class="stat"><b>85 kg</b><span>Oggi</span></div><div class="stat hot"><b>80–82 kg</b><span>Obiettivo</span></div><div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
+        <p class="lede">${esc(PROG.lede)}</p>
+        <div class="stats">${PROG.stats.map(x => `<div class="stat${x[2] ? ' hot' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}<div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
       </div>
-      <div class="hero-fig"><svg data-anim="accel" aria-label="Animazione: accelerazione"></svg></div>
+      <div class="hero-fig"><svg data-anim="${PROG.heroAnim}" aria-label="Animazione: ${esc(EX[PROG.heroAnim] ? EX[PROG.heroAnim].name : 'allenamento')}"></svg></div>
     </div></section>`;
   }
 
@@ -339,7 +348,7 @@ window.FitAccount.whenReady(function () {
   function todayHTML() {
     const d = dayById(TODAY_ID()), pr = dayProgress(d), cw = currentWeek();
     const when = cw === 0 ? `Si parte lunedì ${fmt(START, { day: 'numeric', month: 'long' })} · intanto prova la scheda` : cw <= WEEKS ? `Settimana ${cw} di ${WEEKS}${cw % 4 === 0 ? ' · scarico' : ''}` : 'Programma completato';
-    const cta = d.type === 'gym' || d.type === 'act' ? 'Inizia l\'allenamento' : 'Vedi i consigli';
+    const cta = d.type === 'gym' || d.type === 'act' ? 'Inizia l\'allenamento' : d.type === 'rest' ? 'Vedi la giornata' : 'Vedi i consigli';
     return `<a class="today-card" href="#${d.id}">
       <span class="tc-top"><span class="tc-k">Oggi · ${d.d}</span><span class="md">${d.md}</span></span>
       <span class="tc-t">${esc(d.title)}</span>
@@ -368,12 +377,8 @@ window.FitAccount.whenReady(function () {
         <a href="#esercizi"><b>Tutti gli esercizi</b><span>${Object.keys(EX).length} con video</span></a>
         <a href="#piano"><b>Piano e dieta</b><span>Test, calorie, regole</span></a>
       </section>
-      <section class="sec"><div class="pillars">
-        <div class="pillar"><h3>Più <span>veloce</span></h3><p>Forza pesante il mercoledì, salti e partenze il venerdì: più spinta nei primi 10 metri.</p></div>
-        <div class="pillar"><h3>Più <span>asciutto</span></h3><p>Deficit di 400–500 kcal e proteine alte: perdi grasso senza perdere esplosività.</p></div>
-        <div class="pillar"><h3>Più <span>solido</span></h3><p>Spinte, trazioni, core anti-rotazione e prevenzione: vinci i contrasti e resti in campo.</p></div>
-      </div></section>
-      <p class="note"><b>Partita la domenica.</b> Se giochi il sabato sposta tutto indietro di un giorno. Regole fisse: la palestra pesante per le gambe ad almeno 3 giorni dalla partita, il giorno prima solo attivazione.</p>`;
+      <section class="sec"><div class="pillars">${PROG.pillars.map(p => `<div class="pillar"><h3>${esc(p[0])} <span>${esc(p[1])}</span></h3><p>${esc(p[2])}</p></div>`).join('')}</div></section>
+      <p class="note">${PROG.note}</p>`;
   }
 
   function dayStrip(cur) {
@@ -394,10 +399,10 @@ window.FitAccount.whenReady(function () {
         <div class="meta"><span class="chip ${TYPE_CHIP[d.type]}">${esc(d.label)}</span><span class="md">${d.md}</span></div>
         <p class="big">${d.d}</p><p class="sub">${esc(d.title)}</p>${d.goal ? `<p class="goal">${esc(d.goal)}</p>` : ''}</div>
         ${d.dur ? `<div class="dur"><b>${d.dur}</b><span>Durata</span></div>` : ''}</div>`;
-    if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>7 esercizi per anche e caviglie, anche a casa</span></div><em>Apri →</em></a>`;
+    if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>${MOB.length} esercizi di mobilità, anche a casa</span></div><em>Apri →</em></a>`;
     html += `<div class="edit-bar"><button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
-    if (d.type === 'field' || d.type === 'match') {
-      const tips = d.type === 'field' ? FIELD_TIPS : MATCH_TIPS;
+    const tips = PROG.tips && PROG.tips[d.type];
+    if (tips) {
       html += `<div class="tips">${tips.map(t => `<div class="tip"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>`).join('')}</div>`;
       if (!d.items.length) return html;
     }
@@ -417,10 +422,10 @@ window.FitAccount.whenReady(function () {
 
   function viewMob() {
     return `<div class="dayhead"><div><div class="meta"><span class="chip act">Ogni giorno</span></div>
-      <p class="big">Mobilità</p><p class="sub">Anche e caviglie libere, meno infortuni</p>
+      <p class="big">Mobilità</p><p class="sub">Anche e schiena più libere, meno rigidità</p>
       <p class="goal">Dieci minuti, anche a casa, anche la sera davanti alla TV. Fai gli esercizi in quest'ordine.</p></div>
       <div class="dur"><b>10′</b><span>Ogni giorno</span></div></div>
-      <div class="grid">${MOB.map(m => card(m.ex, { s: m.s })).join('')}</div>`;
+      <div class="grid">${MOB.map(m => card(m.ex, { s: m.s, hold: m.hold })).join('')}</div>`;
   }
 
   let libFilter = 'Tutti', libQuery = '';
@@ -444,41 +449,33 @@ window.FitAccount.whenReady(function () {
   function viewPlan() {
     const tests = store.get('tests', {});
     const rows = TEST_WEEKS.map((n, i) => (i === 0 ? 'Inizio' : 'Settimana ' + n) + ' · ' + fmt(testDate(n), { weekday: 'short', day: 'numeric', month: 'short' }));
-    const colsT = ['Sprint 10 m (s)', 'Sprint 30 m (s)', 'Salto in lungo (cm)', 'Peso (kg)', 'Giro vita (cm)'];
-    return `<div class="sec-h"><div><h2>Piano e alimentazione</h2><p class="kicker">Progressione, test e cosa mangiare. Senza la dieta la scheda da sola non basta.</p></div></div>
+    const PL = PROG.plan, colsT = PL.tests;
+    return `<div class="sec-h"><div><h2>Piano e alimentazione</h2><p class="kicker">${esc(PL.intro)}</p></div></div>
     <div class="cols sec">
       <div class="panel dark"><h3>Blocchi da 4 settimane</h3>
         <div class="bars">
-          <div class="bar"><span>100%</span><i style="height:68%"></i></div>
-          <div class="bar"><span>+2,5–5%</span><i style="height:78%"></i></div>
-          <div class="bar peak"><span>+2,5–5%</span><i style="height:88%"></i></div>
+          <div class="bar"><span>${esc(PL.bars[0])}</span><i style="height:68%"></i></div>
+          <div class="bar"><span>${esc(PL.bars[1])}</span><i style="height:78%"></i></div>
+          <div class="bar peak"><span>${esc(PL.bars[2])}</span><i style="height:88%"></i></div>
           <div class="bar low"><span>Scarico</span><i style="height:40%"></i></div>
         </div>
         <div class="bar-l"><span>Sett. 1</span><span>Sett. 2</span><span>Sett. 3</span><span>Sett. 4</span></div>
-        <p class="small">Settimane 1–3: aumenta il carico del 2,5–5% sugli esercizi principali quando completi tutte le ripetizioni bene. Settimana 4: stessi esercizi, metà delle serie e carico più leggero.</p>
+        <p class="small">${esc(PL.progress)}</p>
         <p class="small">Blocco 1: ${fmt(weekStart(1))} – ${fmt(new Date(weekStart(5) - DAY))} · Blocco 2: ${fmt(weekStart(5))} – ${fmt(new Date(weekStart(9) - DAY))} · Blocco 3: ${fmt(weekStart(9))} – ${fmt(END)}</p>
       </div>
       <div class="panel"><h3>Alimentazione</h3>
-        <div class="nums">
-          <div class="num hot"><b>2.500–2.700</b><span>kcal al giorno (circa −400/500)</span></div>
-          <div class="num"><b>160–180 g</b><span>proteine, su 4 pasti</span></div>
-          <div class="num"><b>−0,4/0,6 kg</b><span>a settimana, non di più</span></div>
-          <div class="num"><b>7–9 ore</b><span>di sonno</span></div>
-        </div>
-        <ul class="list"><li>Carboidrati concentrati nei giorni di campo, mercoledì, sabato e domenica; un po' meno il lunedì.</li>
-          <li>Obiettivo 80–82 kg entro il ${fmt(END, { day: 'numeric', month: 'long' })}, con più muscolo: non devi diventare leggero, devi diventare denso.</li></ul>
+        <div class="nums">${PL.nums.map(x => `<div class="num${x[2] ? ' hot' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+        <ul class="list">${PL.list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       </div>
     </div>
     <section class="sec panel"><h3>Registro test (ogni 4 settimane)</h3>
       <div class="tablebox"><table><thead><tr><th>Quando</th>${colsT.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>
       ${rows.map((r, ri) => `<tr><th scope="row">${r}</th>${colsT.map((c, ci) => `<td><input id="t-${ri}-${ci}" inputmode="decimal" aria-label="${r}: ${c}" value="${esc(tests[ri + '-' + ci] || '')}"></td>`).join('')}</tr>`).join('')}
       </tbody></table></div>
-      <p class="small">Cronometra gli sprint sempre sulla stessa superficie. I valori restano salvati solo in questo browser.</p>
+      <p class="small">${esc(PL.testHint)} I valori sono salvati nel tuo account.</p>
     </section>
     <section class="sec panel dark"><h3>Regole d'oro</h3>
-      <ol class="rules"><li><span><b>Tecnica prima del carico</b>, soprattutto su stacco e nordic.</span></li>
-        <li><span>Se una settimana sei distrutto, salta la Palestra C, non la partita.</span></li>
-        <li><span>Un dolore all'inguine o ai femorali che non passa va fatto vedere a un fisioterapista, non allenato sopra.</span></li></ol>
+      <ol class="rules">${PL.rules.map(x => `<li><span>${x}</span></li>`).join('')}</ol>
     </section>`;
   }
 
@@ -655,6 +652,7 @@ window.FitAccount.whenReady(function () {
   window.addEventListener('hashchange', () => { editing = null; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
+    if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();
     done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
     syncSlow(); route(true);
   });
