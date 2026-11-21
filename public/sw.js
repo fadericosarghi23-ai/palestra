@@ -1,7 +1,7 @@
 /* starfit+ — service worker: l'app funziona anche senza rete.
    Attivo solo su HTTPS (o localhost): su http://192.168... il browser non lo avvia. */
-const VERSION = 'fit-v3';
-const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './app.js',
+const VERSION = 'fit-v4';
+const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './account.js', './app.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 const RUNTIME = 'fit-runtime-v1';
 
@@ -15,6 +15,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // Gli account (/api) vanno sempre in rete e non vengono mai salvati in cache
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
   // File dell'app: prima la rete (così vedi subito gli aggiornamenti), se manca la rete la copia salvata
   if (url.origin === self.location.origin) {
     e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })

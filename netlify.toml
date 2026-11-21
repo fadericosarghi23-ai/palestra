@@ -1,7 +1,12 @@
-# starfit+: sito statico, nessuna build.
+# starfit+: sito statico con una funzione per gli account, nessuna build.
 [build]
   publish = "public"
   command = ""
+
+# Account: una funzione per /api/*, dati salvati in Netlify Blobs (piano gratuito).
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # Il service worker va sempre ricontrollato, così gli aggiornamenti arrivano subito sul telefono.
 [[headers]]

@@ -1,0 +1,15 @@
+{
+  "name": "starfit-plus",
+  "private": true,
+  "version": "1.1.0",
+  "description": "starfit+: scheda di allenamento per terzino, app per iPhone con account",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

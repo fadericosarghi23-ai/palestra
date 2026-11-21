@@ -501,6 +501,89 @@ a, button, summary, label, input { -webkit-tap-highlight-color: transparent; tou
 .brand em { color: var(--fire-bright); font-style: italic; margin-left: 1px; }
 .hero h1.brandname { text-transform: none; font-size: clamp(76px, 11.5vw, 140px); line-height: .82; letter-spacing: -.02em; padding-bottom: 6px; }
 @media (max-width: 760px) { .brand { font-size: 26px; } .hero h1.brandname { font-size: 60px; } }
+
+/* ======================================================================
+   Account e modifica esercizi
+   ====================================================================== */
+[hidden] { display: none !important; }
+
+/* Schermata di accesso */
+body.auth-mode { padding: 0 !important; background: var(--iron); }
+body.auth-mode > header, body.auth-mode > #hero, body.auth-mode > main, body.auth-mode > footer, body.auth-mode > .bnav, body.auth-mode > #timer { display: none !important; }
+.auth { min-height: 100vh; min-height: 100dvh; background: var(--iron); color: var(--on-iron); display: grid; place-items: center;
+  padding: max(28px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(28px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); }
+.auth-in { width: 100%; max-width: 380px; display: grid; gap: 14px; }
+.auth-brand { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 76px; line-height: .85; letter-spacing: -.02em; margin: 0; }
+.auth-brand em { color: var(--fire-bright); }
+.auth-sub { margin: 0 0 10px; color: var(--on-iron-muted); font-size: 16px; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--iron-2); border: 1px solid var(--iron-3); border-radius: 999px; padding: 3px; }
+.auth-tabs button { border: 0; background: transparent; color: var(--on-iron-muted); font-weight: 700; font-size: 15px; padding: 10px; border-radius: 999px; min-height: 44px; cursor: pointer; }
+.auth-tabs button[aria-selected="true"] { background: var(--fire); color: #fff; }
+.auth-form { display: grid; gap: 6px; }
+.auth-form label { font-size: 13px; font-weight: 600; color: var(--on-iron-muted); margin-top: 8px; }
+.auth-form input { width: 100%; font: 500 17px var(--body); padding: 14px; border-radius: 12px; border: 1px solid var(--iron-3); background: var(--iron-2); color: var(--on-iron); }
+.auth-form input:focus { outline: 2px solid var(--fire-bright); outline-offset: 1px; border-color: transparent; }
+.auth-pw { position: relative; }
+.auth-pw input { padding-right: 104px; }
+.auth-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: var(--iron-3); color: var(--on-iron); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 700; min-height: 38px; cursor: pointer; }
+.auth-err { margin: 6px 0 0; color: #ff9480; font-weight: 600; font-size: 14px; }
+.auth-go { margin-top: 12px; border: 0; border-radius: 999px; background: var(--fire); color: #fff; font: 700 17px var(--body); min-height: 54px; cursor: pointer; }
+.auth-go:disabled { opacity: .7; }
+.auth-go:active { transform: scale(.98); }
+.auth-note { margin: 6px 0 0; font-size: 13px; color: var(--on-iron-muted); }
+
+/* Pulsante account nella testata */
+.acct-wrap { position: relative; flex: none; }
+.acct { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--iron-3); background: var(--iron-2); color: var(--on-iron); font-family: var(--display); font-weight: 800; font-size: 18px; cursor: pointer; display: grid; place-items: center; position: relative; padding: 0; }
+.acct::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border-radius: 50%; background: #3fb950; border: 2px solid var(--iron); }
+.acct[data-status="saving"]::after { background: #e3a82b; }
+.acct[data-status="offline"]::after { background: var(--on-iron-muted); }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 12px); width: 250px; background: var(--iron-2); color: var(--on-iron); border: 1px solid var(--iron-3); border-radius: 14px; padding: 14px 16px 16px; box-shadow: 0 14px 34px rgba(0, 0, 0, .45); z-index: 60; display: grid; gap: 2px; }
+.acct-k { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--fire-bright); margin: 0; }
+.acct-name { font-family: var(--display); font-weight: 800; font-size: 26px; margin: 0; overflow-wrap: anywhere; }
+.acct-status { font-size: 13px; color: var(--on-iron-muted); margin: 0 0 10px; }
+.acct-menu .btn-ghost { border-color: var(--on-iron-muted); color: var(--on-iron); min-height: 44px; }
+.acct-menu .btn-ghost:hover { background: var(--on-iron); color: var(--iron); }
+
+/* Modifica esercizi */
+.edit-bar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin: -4px 0 20px; }
+.ed-open { border: 1.5px solid var(--ink); background: transparent; color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 15px; cursor: pointer; min-height: 44px; }
+.ed-open:hover { background: var(--ink); color: var(--steel); }
+.ed-flag { font-size: 12px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 4px; background: var(--steel-light); border-left: 3px solid var(--fire); }
+.ed-list { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 10px; }
+.ed-row { background: var(--steel-light); border: 1px solid var(--steel-line); border-radius: 14px; padding: 12px 14px 14px; }
+.ed-row.saved { animation: ed-saved 1s ease; }
+@keyframes ed-saved { 0% { box-shadow: 0 0 0 3px rgba(224, 50, 27, .6); } 100% { box-shadow: 0 0 0 0 rgba(224, 50, 27, 0); } }
+.ed-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ed-n { width: 28px; height: 28px; border-radius: 50%; background: var(--iron); color: var(--on-iron); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 15px; flex: none; }
+.ed-h b { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 20px; line-height: 1.05; flex: 1; min-width: 0; }
+.ed-mv { display: flex; gap: 6px; flex: none; }
+.ed-mv button { min-width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--steel-line); background: var(--steel); color: var(--ink); font-weight: 700; font-size: 17px; cursor: pointer; }
+.ed-mv button:disabled { opacity: .3; cursor: default; }
+.ed-mv .ed-del { padding: 0 12px; font-size: 13px; }
+.ed-mv .ed-del.arm { background: var(--fire); color: #fff; border-color: var(--fire); }
+.ed-f { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 10px; }
+.ed-f label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; min-width: 0; }
+.ed-f .wide { grid-column: 1 / -1; }
+.ed-f input, .ed-f select { font: 500 16px var(--body); text-transform: none; letter-spacing: 0; color: var(--ink); background: var(--steel); border: 1px solid var(--steel-line); border-radius: 10px; padding: 10px 12px; min-height: 46px; width: 100%; min-width: 0; }
+.ed-f input:focus, .ed-f select:focus { outline: 2px solid var(--fire); outline-offset: 0; }
+.ed-add h3 { margin-bottom: 12px; }
+.ed-add .ed-f { margin-bottom: 14px; }
+.ed-add-go { width: 100%; }
+.ed-foot { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 26px; }
+.ed-foot .tc-cta { border: 0; cursor: pointer; }
+.ed-empty { padding: 16px; background: var(--steel-light); border-radius: 12px; }
+@media (max-width: 760px) {
+  .ed-f { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ed-h { flex-wrap: wrap; }
+  .ed-h b { font-size: 18px; }
+  .ed-foot .tc-cta { width: 100%; justify-content: center; }
+  .ed-foot .btn-ghost { width: 100%; min-height: 46px; }
+  .acct { width: 36px; height: 36px; font-size: 17px; }
+  .top .wrap { gap: 10px; }
+  .brand { margin-right: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .ed-row.saved { animation: none; } }
 </style>
 </head>
 <body>
@@ -509,6 +592,8 @@ a, button, summary, label, input { -webkit-tap-highlight-color: transparent; tou
     <a class="brand" href="#settimana" aria-label="starfit+, vai alla settimana"><span>starfit<em>+</em></span></a>
     <nav class="tabs" id="tabs" aria-label="Sezioni"></nav>
     <button class="sw-open" id="sw-open" type="button" title="Timer di recupero e cronometro"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9.5V6.5M6 1.5h4M12.5 4.5l1-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">Recupero</span></button>
+    <div class="acct-wrap"><button class="acct" id="acct" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Il tuo account" hidden><span class="acct-i">?</span></button>
+      <div class="acct-menu" id="acct-menu" hidden><p class="acct-k">Account</p><p class="acct-name"></p><p class="acct-status" id="acct-status"></p><button type="button" id="acct-out" class="btn-ghost">Esci</button></div></div>
     <button class="slow" id="slow" type="button" aria-pressed="false" title="Rallenta le animazioni"><span class="dot"></span><span class="lbl">Rallenta</span></button>
   </div>
 </header>
@@ -526,6 +611,7 @@ a, button, summary, label, input { -webkit-tap-highlight-color: transparent; tou
 <script src="data.js"></script>
 <script src="videos.js"></script>
 <script src="timer.js"></script>
+<script src="account.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

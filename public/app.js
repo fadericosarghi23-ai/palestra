@@ -1,16 +1,23 @@
-/* starfit+ — interfaccia */
-(function () {
+/* starfit+ — interfaccia (parte dopo l'accesso all'account) */
+window.FitAccount.whenReady(function () {
   const { ANIM, evaluate, prepare, mid } = window.FitAnim;
-  const { EX, MOB, DAYS, FIELD_TIPS, MATCH_TIPS } = window.FitData;
+  const { EX, MOB, DAYS: DAYS_SRC, FIELD_TIPS, MATCH_TIPS } = window.FitData;
   const NS = 'http://www.w3.org/2000/svg';
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  /* ---------- memoria locale (solo su questo dispositivo) ---------- */
-  const store = {
-    get(k, d) { try { const v = localStorage.getItem('pm-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem('pm-' + k, JSON.stringify(v)); } catch (e) { /* niente */ } }
-  };
+  /* ---------- dati salvati nell'account (vedi account.js) ---------- */
+  const store = window.FitAccount.store;
+
+  /* Scheda: quella di base, con le modifiche fatte dall'utente per ogni giorno.
+     Ogni esercizio ha un uid stabile: serve per ricordare serie e "Fatto". */
+  const BASE_DAYS = DAYS_SRC.map(d => Object.assign({}, d, { items: (d.items || []).map((it, i) => Object.assign({ uid: d.id + ':' + i }, it)) }));
+  function days() {
+    const plan = store.get('plan', {});
+    return BASE_DAYS.map(d => plan[d.id] ? Object.assign({}, d, { items: plan[d.id], custom: true }) : d);
+  }
+  const dayById = id => days().find(d => d.id === id);
+  function findItem(uid) { for (const d of days()) for (const it of d.items) if (it.uid === uid) return it; return null; }
   let done = store.get('done', {});
   let speed = store.get('speed', 1);
 
@@ -177,7 +184,7 @@
 
   function usage(id) {
     const out = [];
-    DAYS.forEach(d => (d.items || []).forEach(it => { if (it.ex === id) out.push(`<b>${d.d.slice(0, 3)}</b> ${esc(it.s)}`); }));
+    days().forEach(d => (d.items || []).forEach(it => { if (it.ex === id) out.push(`<b>${d.d.slice(0, 3)}</b> ${esc(it.s)}`); }));
     const m = MOB.find(x => x.ex === id);
     if (m) out.push(`<b>Ogni giorno</b> ${esc(m.s)}`);
     return out.join(' · ');
@@ -189,7 +196,15 @@
 
   /* ---------- serie e recuperi ---------- */
   let setsDone = store.get('sets', {});
-  const parseRest = r => { if (!r || r === '—') return 0; const m = /(\d+)(?:–\d+)?\s*([′″])/.exec(r); return m ? +m[1] * (m[2] === '′' ? 60 : 1) : 0; };
+  const parseRest = r => {
+    if (!r || r === '—') return 0;
+    const m = /(\d+)(?:\s*[–-]\s*\d+)?\s*([′″'"]|min|s)?(?:\s*(\d+)\s*[″"s]?)?/.exec(String(r));
+    if (!m) return 0;
+    const n = +m[1], u = m[2];
+    if (u === '′' || u === "'" || u === 'min') return n * 60 + (m[3] ? +m[3] : 0);
+    if (u === '″' || u === '"' || u === 's') return n;
+    return n < 10 ? n * 60 : n;
+  };
   const parseSets = s => { const m = /^(\d+)(?:–(\d+))?\s*×/.exec(s || ''); return m ? +(m[2] || m[1]) : 0; };
   const fmtSec = s => s >= 60 ? (s % 60 ? `${Math.floor(s / 60)}′${String(s % 60).padStart(2, '0')}″` : `${s / 60}′`) : `${s}″`;
   function setBar(id, it, key) {
@@ -206,8 +221,8 @@
   }
   function refreshSetBar(sb) {
     const card = sb.closest('.ex'), key = sb.dataset.key;
-    const day = DAYS.find(d => d.id === key.split(':')[0]);
-    const it = day.items[+key.split(':')[1]];
+    const it = findItem(key);
+    if (!it) return;
     sb.outerHTML = setBar(it.ex, it, key);
     if (setsDone[key] >= parseSets(it.s)) {
       done[key] = true; store.set('done', done);
@@ -264,7 +279,7 @@
 
   function dayProgress(d) {
     const its = (d.items || []).filter(i => i.ex);
-    const n = its.reduce((s, it, i) => s + (done[d.id + ':' + d.items.indexOf(it)] ? 1 : 0), 0);
+    const n = its.reduce((s, it) => s + (done[it.uid] ? 1 : 0), 0);
     return { n, tot: its.length };
   }
 
@@ -322,7 +337,7 @@
   }
 
   function todayHTML() {
-    const d = DAYS.find(x => x.id === TODAY_ID()), pr = dayProgress(d), cw = currentWeek();
+    const d = dayById(TODAY_ID()), pr = dayProgress(d), cw = currentWeek();
     const when = cw === 0 ? `Si parte lunedì ${fmt(START, { day: 'numeric', month: 'long' })} · intanto prova la scheda` : cw <= WEEKS ? `Settimana ${cw} di ${WEEKS}${cw % 4 === 0 ? ' · scarico' : ''}` : 'Programma completato';
     const cta = d.type === 'gym' || d.type === 'act' ? 'Inizia l\'allenamento' : 'Vedi i consigli';
     return `<a class="today-card" href="#${d.id}">
@@ -336,7 +351,7 @@
 
   function viewHome() {
     const todayId = TODAY_ID();
-    const tiles = DAYS.map(d => {
+    const tiles = days().map(d => {
       const pr = dayProgress(d);
       return `<a class="day-tile${d.id === todayId ? ' today' : ''}" href="#${d.id}">
         ${d.id === todayId ? '<span class="today-tag">Oggi</span>' : ''}
@@ -363,13 +378,14 @@
 
   function dayStrip(cur) {
     const t = TODAY_ID();
-    return `<nav class="daystrip" aria-label="Giorni">${DAYS.map(d => `<a href="#${d.id}" class="ds-${d.type}${d.id === t ? ' is-today' : ''}"${d.id === cur ? ' aria-current="page"' : ''}><b>${d.d.slice(0, 3)}</b><i></i></a>`).join('')}</nav>`;
+    return `<nav class="daystrip" aria-label="Giorni">${days().map(d => `<a href="#${d.id}" class="ds-${d.type}${d.id === t ? ' is-today' : ''}"${d.id === cur ? ' aria-current="page"' : ''}><b>${d.d.slice(0, 3)}</b><i></i></a>`).join('')}</nav>`;
   }
   function dayPager(d) {
-    const i = DAYS.indexOf(d), p = DAYS[(i + 6) % 7], n = DAYS[(i + 1) % 7];
+    const all = days(), i = all.findIndex(x => x.id === d.id), p = all[(i + 6) % 7], n = all[(i + 1) % 7];
     return `<nav class="pager" aria-label="Giorno precedente e successivo"><a href="#${p.id}"><span>← ${p.d}</span><b>${esc(p.label)}</b></a><a href="#${n.id}" class="nx"><span>${n.d} →</span><b>${esc(n.label)}</b></a></nav>`;
   }
   function viewDay(d) {
+    if (editing === d.id) return dayStrip(d.id) + viewEdit(d);
     return dayStrip(d.id) + viewDayBody(d) + dayPager(d);
   }
   function viewDayBody(d) {
@@ -379,19 +395,20 @@
         <p class="big">${d.d}</p><p class="sub">${esc(d.title)}</p>${d.goal ? `<p class="goal">${esc(d.goal)}</p>` : ''}</div>
         ${d.dur ? `<div class="dur"><b>${d.dur}</b><span>Durata</span></div>` : ''}</div>`;
     if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>7 esercizi per anche e caviglie, anche a casa</span></div><em>Apri →</em></a>`;
+    html += `<div class="edit-bar"><button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
     if (d.type === 'field' || d.type === 'match') {
       const tips = d.type === 'field' ? FIELD_TIPS : MATCH_TIPS;
       html += `<div class="tips">${tips.map(t => `<div class="tip"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>`).join('')}</div>`;
-      return html;
+      if (!d.items.length) return html;
     }
     const blocks = [['warm', 'Riscaldamento'], ['main', d.type === 'act' ? 'Attivazione' : 'Lavoro principale'], ['end', 'Finale']];
     blocks.forEach(([b, lbl]) => {
-      const its = d.items.map((it, i) => ({ it, i })).filter(x => x.it.b === b);
+      const its = (d.items || []).map((it, i) => ({ it, i })).filter(x => x.it.b === b);
       if (!its.length) return;
       html += `<h3 class="block-h">${lbl}</h3><div class="grid">`;
       its.forEach(({ it, i }) => {
         if (it.link) html += `<a class="mob-link" href="#mobilita" style="margin:0"><div><b>Mobilità quotidiana · ${esc(it.s)}</b><br><span>La stessa routine di ogni giorno</span></div><em>Apri →</em></a>`;
-        else html += card(it.ex, it, d.id + ':' + i);
+        else if (EX[it.ex]) html += card(it.ex, it, it.uid);
       });
       html += `</div>`;
     });
@@ -465,14 +482,105 @@
     </section>`;
   }
 
+  /* ---------- modifica esercizi ---------- */
+  let editing = null;
+  const BLOCKS = d => [['warm', 'Riscaldamento'], ['main', d.type === 'act' ? 'Attivazione' : 'Principale'], ['end', 'Finale']];
+  function normRest(v) {
+    v = String(v || '').trim().replace(/'/g, '′').replace(/"/g, '″');
+    if (!v) return '';
+    if (/^\d+$/.test(v)) { const n = +v; return n < 10 ? n + '′' : n >= 60 ? Math.floor(n / 60) + '′' + (n % 60 ? String(n % 60).padStart(2, '0') + '″' : '') : n + '″'; }
+    return v.replace(/\s*min$/i, '′').replace(/(\d)\s*s(ec)?$/i, '$1″');
+  }
+  function normSets(v) { return String(v || '').trim().replace(/\s*[xX*]\s*/, ' × '); }
+  function editItems(d) { return JSON.parse(JSON.stringify(d.items || [])); }
+  function saveItems(dayId, items) { const plan = store.get('plan', {}); plan[dayId] = items; store.set('plan', plan); }
+  function viewEdit(d) {
+    const items = d.items || [], bl = BLOCKS(d);
+    const opt = (val, cur) => `<option value="${val[0]}"${val[0] === cur ? ' selected' : ''}>${val[1]}</option>`;
+    const rows = items.map((it, i) => {
+      const title = it.link ? 'Mobilità quotidiana' : (EX[it.ex] ? EX[it.ex].name : it.ex);
+      const u = esc(it.uid);
+      return `<li class="ed-row" data-i="${i}">
+        <div class="ed-h"><span class="ed-n">${i + 1}</span><b>${esc(title)}</b>
+          <span class="ed-mv"><button type="button" data-ed="up" aria-label="Sposta su"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-ed="down" aria-label="Sposta giù"${i === items.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-ed="del" class="ed-del" aria-label="Rimuovi ${esc(title)}">Rimuovi</button></span></div>
+        <div class="ed-f">
+          <label>Serie × ripetizioni<input id="ed-s-${u}" data-f="s" value="${esc(it.s || '')}" placeholder="3 × 10" autocomplete="off"></label>
+          ${it.link ? '' : `<label>Recupero<input id="ed-r-${u}" data-f="r" value="${esc(it.r || '')}" placeholder="90″ o 2′" autocomplete="off"></label>
+          <label>Dettaglio<input id="ed-p-${u}" data-f="per" value="${esc(it.per || '')}" placeholder="per lato" autocomplete="off"></label>`}
+          <label>Parte<select id="ed-b-${u}" data-f="b">${bl.map(x => opt(x, it.b)).join('')}</select></label>
+          ${it.link ? '' : `<label class="wide">Nota<input id="ed-n-${u}" data-f="note" value="${esc(it.note || '')}" placeholder="Facoltativa" autocomplete="off"></label>`}
+        </div></li>`;
+    }).join('');
+    const cats = [...new Set(Object.values(EX).map(e => e.cat))];
+    const opts = cats.map(c => `<optgroup label="${esc(c)}">${Object.keys(EX).filter(id => EX[id].cat === c).map(id => `<option value="${id}">${esc(EX[id].name)}</option>`).join('')}</optgroup>`).join('');
+    return `<div class="dayhead"><div><div class="meta"><span class="chip ${TYPE_CHIP[d.type]}">${esc(d.label)}</span><span class="md">${d.md}</span></div>
+        <p class="big">${d.d}</p><p class="sub">Modifica esercizi</p>
+        <p class="goal">Cambia serie, recupero e note, sposta o togli gli esercizi e aggiungine di nuovi. Ogni modifica si salva da sola nel tuo account.</p></div></div>
+      <ol class="ed-list" id="ed-list" data-day="${d.id}">${rows || '<li class="ed-empty">Nessun esercizio in questo giorno. Aggiungine uno qui sotto.</li>'}</ol>
+      <section class="panel ed-add"><h3>Aggiungi un esercizio</h3>
+        <div class="ed-f">
+          <label class="wide">Esercizio<select id="ed-add-ex">${opts}</select></label>
+          <label>Parte<select id="ed-add-b">${bl.map(x => opt(x, 'main')).join('')}</select></label>
+          <label>Serie × ripetizioni<input id="ed-add-s" value="3 × 10" autocomplete="off"></label>
+          <label>Recupero<input id="ed-add-r" value="60″" autocomplete="off"></label>
+        </div>
+        <button type="button" class="sb-btn ed-add-go" id="ed-add-go">+ Aggiungi a ${esc(d.d)}</button>
+      </section>
+      <div class="ed-foot"><button type="button" class="tc-cta ed-done" id="ed-done">Fatto, torna al giorno <b>→</b></button>
+        ${d.custom ? '<button type="button" class="btn-ghost" id="ed-reset">Ripristina la scheda originale</button>' : ''}</div>`;
+  }
+  function onEditChange(t) {
+    const row = t.closest('.ed-row'), list = t.closest('#ed-list');
+    if (!row || !list) return;
+    const d = dayById(list.dataset.day), items = editItems(d), it = items[+row.dataset.i], f = t.dataset.f;
+    let v = t.value;
+    if (f === 'r') v = normRest(v);
+    if (f === 's') v = normSets(v);
+    if (v) it[f] = v; else delete it[f];
+    if (f === 'r' || f === 's') t.value = v;
+    saveItems(d.id, items);
+    flashSaved(row);
+  }
+  function flashSaved(row) { row.classList.remove('saved'); void row.offsetWidth; row.classList.add('saved'); }
+  function onEditClick(e) {
+    const b = e.target.closest('[data-ed]');
+    if (b) {
+      const list = b.closest('#ed-list'), d = dayById(list.dataset.day), items = editItems(d), i = +b.closest('.ed-row').dataset.i;
+      if (b.dataset.ed === 'up' && i > 0) [items[i - 1], items[i]] = [items[i], items[i - 1]];
+      if (b.dataset.ed === 'down' && i < items.length - 1) [items[i + 1], items[i]] = [items[i], items[i + 1]];
+      if (b.dataset.ed === 'del') {
+        if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Conferma'; b.classList.add('arm'); setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Rimuovi'; b.classList.remove('arm'); } }, 3500); return true; }
+        items.splice(i, 1);
+      }
+      buzz(); saveItems(d.id, items); route(true); return true;
+    }
+    if (e.target.closest('#ed-open')) { editing = (location.hash || '#').slice(1) || TODAY_ID(); if (editing === 'oggi') editing = TODAY_ID(); route(); return true; }
+    if (e.target.closest('#ed-done')) { editing = null; route(); return true; }
+    if (e.target.closest('#ed-add-go')) {
+      const d = dayById(editing), items = editItems(d);
+      const it = { uid: d.id + ':n' + Date.now().toString(36), b: document.getElementById('ed-add-b').value, ex: document.getElementById('ed-add-ex').value,
+        s: normSets(document.getElementById('ed-add-s').value) || '3 × 10' };
+      const r = normRest(document.getElementById('ed-add-r').value); if (r) it.r = r;
+      items.push(it); saveItems(d.id, items); buzz(); route(true);
+      const last = document.querySelector('#ed-list .ed-row:last-child'); if (last) { last.scrollIntoView({ block: 'center' }); flashSaved(last); }
+      return true;
+    }
+    const rs = e.target.closest('#ed-reset');
+    if (rs) {
+      if (rs.dataset.confirm !== '1') { rs.dataset.confirm = '1'; rs.textContent = 'Tocca di nuovo per ripristinare'; setTimeout(() => { if (rs.isConnected) { rs.dataset.confirm = ''; rs.textContent = 'Ripristina la scheda originale'; } }, 4000); return true; }
+      const plan = store.get('plan', {}); delete plan[editing]; store.set('plan', plan); route(true); return true;
+    }
+    return false;
+  }
+
   /* ---------- router ---------- */
-  const TABS = [['settimana', 'Settimana'], 'sep'].concat(DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['mobilita', 'Mobilità'], ['esercizi', 'Esercizi'], ['piano', 'Piano']]);
+  const TABS = [['settimana', 'Settimana'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['mobilita', 'Mobilità'], ['esercizi', 'Esercizi'], ['piano', 'Piano']]);
   function renderTabs(cur) {
     const tabs = document.getElementById('tabs');
     tabs.innerHTML = TABS.map(t => t === 'sep' ? '<span class="sep"></span>' : `<a href="#${t[0]}"${t[0] === cur ? ' aria-current="page"' : ''}>${t[1]}</a>`).join('');
     const a = tabs.querySelector('a[aria-current]');
     if (a) tabs.scrollLeft = a.offsetLeft - tabs.clientWidth / 2 + a.clientWidth / 2;
-    const isDay = DAYS.some(d => d.id === cur);
+    const isDay = BASE_DAYS.some(d => d.id === cur);
     const bkey = cur === TODAY_ID() ? 'oggi' : isDay ? 'settimana' : cur;
     document.querySelectorAll('.bnav a').forEach(x => { if (x.dataset.k === bkey) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
   }
@@ -480,10 +588,10 @@
     const cal = document.querySelector('.cal'), now = cal && (cal.querySelector('.wk.now') || cal.querySelector('.wk'));
     if (cal && now && cal.scrollWidth > cal.clientWidth) cal.scrollLeft = Math.max(0, now.offsetLeft - cal.offsetLeft - 16);
   }
-  function route() {
+  function route(keep) {
     let id = (location.hash || '').replace('#', '') || 'settimana';
     if (id === 'oggi') id = TODAY_ID();
-    const day = DAYS.find(d => d.id === id);
+    const day = dayById(id);
     if (!day && !['settimana', 'mobilita', 'esercizi', 'piano'].includes(id)) id = 'settimana';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
@@ -495,11 +603,12 @@
     if (id === 'settimana') centerCalendar();
     const ds = main.querySelector('.daystrip a[aria-current]');
     if (ds) { const strip = ds.parentElement; strip.scrollLeft = ds.offsetLeft - strip.clientWidth / 2 + ds.clientWidth / 2; }
-    window.scrollTo(0, 0);
+    if (!keep) window.scrollTo(0, 0);
   }
 
   /* ---------- eventi ---------- */
   document.addEventListener('change', e => {
+    if (e.target.closest && e.target.closest('#ed-list') && e.target.dataset.f) return onEditChange(e.target);
     const k = e.target.dataset && e.target.dataset.key;
     if (k) { if (e.target.checked) done[k] = true; else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
@@ -509,6 +618,7 @@
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
+    if (onEditClick(e)) return;
     const sbb = e.target.closest('.setbar button');
     if (sbb) onSetBar(sbb);
     if (e.target.closest('#sw-open, .bnav-timer')) { buzz(); window.FitTimer.picker(); }
@@ -542,7 +652,12 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', () => { editing = null; route(); });
+  // Dati aggiornati da un altro dispositivo
+  window.FitAccount.onRemote(() => {
+    done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
+    syncSlow(); route(true);
+  });
   route();
   requestAnimationFrame(loop);
-})();
+});
