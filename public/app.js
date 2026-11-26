@@ -903,10 +903,14 @@ window.FitAccount.whenReady(function () {
         <p class="hero-ed-n">Li vedi in alto nella pagina Io. Il peso va anche nel diario del peso. Il traguardo (${fmt(END, { day: 'numeric', month: 'long', year: 'numeric' })}) segue il calendario delle 12 settimane.</p>
         <div class="hero-ed-a"><button type="submit" class="sb-btn">Salva</button><button type="button" class="btn-ghost" id="he-reset">Ripristina i dati della scheda</button></div>
         ${profMsg ? `<p class="hero-ed-ok">${esc(profMsg)}</p>` : ''}
-      </form>`;
+      </form>
+      <section class="sec panel prof-set"><h3>Preferenze</h3>
+        <label class="prof-row"><span><b>Animazioni lente</b><small>Gli omini degli esercizi si muovono a metà velocità</small></span><input type="checkbox" id="prof-slow"${speed < 1 ? ' checked' : ''}></label>
+      </section>`;
   }
   let profMsg = '';
   function onHeroClick(e) {
+    if (e.target.id === 'prof-slow') { const sl = document.getElementById('slow'); if (sl) sl.click(); return false; }
     if (e.target.closest('#he-reset')) { store.set('profile', {}); profMsg = 'Ripristinati i dati della scheda.'; buzz(); route(true); return true; }
     return false;
   }
@@ -1284,15 +1288,23 @@ window.FitAccount.whenReady(function () {
     const cur = (location.hash || '#').slice(1);
     sh = document.createElement('div'); sh.id = 'more-sheet'; sh.className = 'more-sheet';
     const u = window.FitAccount.user() || '', st = document.getElementById('acct-status');
-    sh.innerHTML = `<div class="more-in" role="menu" aria-label="Tutte le sezioni">
-      <div class="more-top"><span class="more-av">${esc(u.charAt(0).toUpperCase())}</span><span class="more-u"><b>${esc(u)}</b><small>${esc(st ? st.textContent : '')}</small></span>
-        <button type="button" class="sb-btn more-timer" data-more="timer">⏱ Recupero</button></div>
-      ${moreGroups().map(([g, items]) => `<p class="more-g">${esc(g)}</p><div class="more-list">${items.map(([id, t, d]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}><b>${esc(t)}</b><span>${esc(d)}</span></a>`).join('')}</div>`).join('')}
-      <div class="more-foot"><button type="button" class="btn-ghost" data-more="slow">${speed < 1 ? 'Animazioni normali' : 'Rallenta le animazioni'}</button><button type="button" class="btn-ghost" data-more="out">Esci</button></div>
+    const I = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const main = [['oggi', 'Oggi', I('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>')], ['settimana', 'Allenamento', I('<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>')],
+      ['cibo', 'Pasti', I('<path d="M7 2.5v6.5M4.5 2.5v4a2.5 2.5 0 0 0 5 0v-4M7 9v12.5"/><path d="M17.5 21.5V2.5c-2.2 1.2-3.5 4-3.5 7.5 0 2 .8 3 2 3.4h1.5"/>')], ['io', 'Io', I('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>')]];
+    const rows = [['esercizi', 'Tutti gli esercizi', n0(Object.keys(EX).length), I('<path d="M4 6h16M4 12h16M4 18h10"/>')], ['mobilita', 'Mobilità', '', I('<circle cx="12" cy="4.5" r="2"/><path d="M5 9.5c2.5 1 4.5 1.3 7 1.3s4.5-.3 7-1.3M12 10.8v4.2M12 15l-4 6M12 15l4 6"/>')],
+      ['costanza', 'Costanza', '', I('<rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M8 2.5v4M16 2.5v4M7.5 11h.01M12 11h.01M16.5 11h.01M7.5 15.5h.01M12 15.5h.01" stroke-width="2.6"/>')], ['progressi', 'Foto e misure', '', I('<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8.5 6 10 3.5h4L15.5 6"/>')],
+      ['piano', 'Piano e dieta', '', I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>')], ['watch', 'Apple Watch e promemoria', '', I('<rect x="6.5" y="6" width="11" height="12" rx="3"/><path d="M9 6l.6-3.5h4.8L15 6M9 18l.6 3.5h4.8L15 18"/>')]];
+    const td = dayById(TODAY_ID()), training = !!td && (td.items || []).some(it => it.ex && (parseRest(it.r) || parseSets(it.s)));
+    sh.innerHTML = `<div class="more-in" role="menu" aria-label="Menu di starfit+">
+      <div class="more-top"><a class="more-prof" href="#profilo" role="menuitem"><span class="more-av">${esc(u.charAt(0).toUpperCase())}</span><span class="more-u"><b>${esc(u)}</b><small>Profilo · ${esc(st ? st.textContent : '')}</small></span></a>
+        ${training ? '<button type="button" class="more-timer" data-more="timer" aria-label="Timer di recupero">⏱ Recupero</button>' : ''}</div>
+      <div class="more-main">${main.map(([id, t, ic]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}>${ic}<b>${t}</b></a>`).join('')}</div>
+      <div class="more-rows">${rows.map(([id, t, n, ic]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}>${ic}<b>${t}</b>${n ? `<small>${n}</small>` : ''}<em aria-hidden="true">›</em></a>`).join('')}</div>
+      <div class="more-foot"><button type="button" class="more-out" data-more="out">Esci dall'account</button></div>
     </div>`;
     sh.addEventListener('click', e => {
       const b = e.target.closest('[data-more]');
-      if (b) { const a = b.dataset.more; toggleMore(false); if (a === 'timer') window.FitTimer.picker(); if (a === 'slow') { const sl = document.getElementById('slow'); if (sl) sl.click(); } if (a === 'out') { const o = document.getElementById('acct-out'); if (o) o.click(); } return; }
+      if (b) { const a = b.dataset.more; toggleMore(false); if (a === 'timer') window.FitTimer.picker(); if (a === 'out') { const o = document.getElementById('acct-out'); if (o) o.click(); } return; }
       if (e.target === sh || e.target.closest('a')) toggleMore(false);
     });
     document.body.appendChild(sh); if (btn) btn.setAttribute('aria-expanded', 'true');

@@ -1,7 +1,7 @@
 /* starfit+ — service worker: l'app funziona anche senza rete.
    Attivo solo su HTTPS (o localhost): su http://192.168... il browser non lo avvia. */
 // La versione cambia da sola: node tools/sw-version.mjs (calcolata dai file dell'app). Prima del push viene controllata.
-const VERSION = 'fit-182202669d';
+const VERSION = 'fit-3326c35b93';
 const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './food.js', './library.js', './account.js', './app.js', './progress.js', './body.js', './daily.js', './foodplus.js', './season.js', './news.js', './streak.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 const RUNTIME = 'fit-runtime-v1';

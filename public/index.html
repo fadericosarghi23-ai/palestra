@@ -940,6 +940,41 @@ html body .oggi-t { margin: 2px 0 0; font: 700 30px/1.1 var(--display); letter-s
   .hero .wrap { padding-top: 18px; }
 }
 .hero-ed label.wide { grid-column: 1 / -1; }
+
+/* Menu del logo, versione ordinata */
+.more-in { padding: 10px; }
+.more-top { display: flex; align-items: center; gap: 10px; padding: 2px 2px 12px; border-bottom: 0; margin-bottom: 0; }
+.more-prof { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--on-iron); padding: 6px; border-radius: 12px; }
+.more-prof:active { background: var(--iron-2); }
+.more-prof, .more-prof .more-u { text-align: left; justify-content: flex-start; }
+.more-in a.more-prof { display: flex; grid-template-columns: none; padding: 6px; border: 0; }
+.more-prof .more-u { display: block; }
+.more-av { width: 40px; height: 40px; font-size: 17px; }
+.more-u small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.more-timer { flex: 0 0 auto; border: 1px solid var(--iron-3); background: var(--iron-2); color: var(--on-iron); border-radius: 10px; min-height: 40px; padding: 0 12px; font: 600 14px/1 var(--body); cursor: pointer; }
+.more-main { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.more-in .more-main a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 4px 12px; border-radius: 14px; background: var(--iron-2); border: 0; color: var(--on-iron); text-decoration: none; min-height: 78px; }
+.more-in .more-main a + a { border-top: 0; }
+.more-main a svg { width: 24px; height: 24px; color: var(--on-iron-muted); }
+.more-in .more-main a b { font-size: 13px; font-weight: 600; }
+.more-in .more-main a[aria-current="page"] { background: var(--fire); }
+.more-in .more-main a[aria-current="page"] svg { color: #fff; }
+.more-in .more-main a[aria-current="page"] b { color: #fff; }
+.more-rows { margin-top: 10px; background: var(--iron-2); border-radius: 14px; overflow: hidden; }
+.more-in .more-rows a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 0; color: var(--on-iron); text-decoration: none; }
+.more-in .more-rows a + a { border-top: 1px solid var(--iron-3); }
+.more-rows a svg { width: 20px; height: 20px; color: var(--on-iron-muted); flex: 0 0 auto; }
+.more-in .more-rows a b { flex: 1; font-size: 15px; font-weight: 500; }
+.more-rows a small { font-size: 12px; color: var(--on-iron-muted); }
+.more-in .more-rows a em { font-style: normal; font-size: 20px; line-height: 1; color: var(--on-iron-muted); }
+.more-in .more-rows a[aria-current="page"] b, .more-in .more-rows a[aria-current="page"] svg { color: var(--fire-bright); }
+.more-foot { justify-content: center; margin-top: 8px; padding: 0; }
+.more-out { background: none; border: 0; color: var(--on-iron-muted); font: 500 13px/1 var(--body); padding: 10px; min-height: 40px; cursor: pointer; }
+.prof-set h3 { margin-bottom: 4px; }
+.prof-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; cursor: pointer; }
+.prof-row b { display: block; font-weight: 600; }
+.prof-row small { display: block; font-size: 12px; color: var(--ink-muted); }
+.prof-row input { width: 24px; height: 24px; accent-color: var(--fire); flex: 0 0 auto; }
 </style>
 </head>
 <body>
