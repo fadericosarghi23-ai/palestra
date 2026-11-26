@@ -106,6 +106,7 @@ Poi apri `http://localhost:8080`. Il server stampa anche l'indirizzo da usare su
 
 Nell'app: menu dell'account → **Apple Watch e promemoria**. Lì si crea il codice personale e ci sono le guide passo passo per i Comandi rapidi.
 
-- , , , , , , : tutti con .
+- `/api/w/oggi`, `/api/w/prossimo`, `/api/w/fatto`, `/api/w/recupero`, `/api/w/peso?kg=`, `/api/w/attivita?kcal=&min=&passi=&fcr=`, `/api/w/calendario.ics`: tutti con `?k=<codice>` (oppure `&k=` dopo gli altri parametri).
 - I dati in arrivo dai comandi vanno in un archivio separato e l'app li unisce ai suoi quando si apre.
-- Le chiavi delle notifiche sono ricavate da : non serve configurare altro. Le notifiche su iPhone funzionano solo dall'app installata sulla schermata Home (iOS 16.4 o successivo).
+- I promemoria partono dalla funzione programmata `promemoria` ogni 15 minuti, al massimo una volta al giorno per tipo.
+- Le chiavi delle notifiche sono ricavate da `STARFIT_ADMIN_KEY`: non serve configurare altro. Le notifiche su iPhone funzionano solo dall'app installata sulla schermata Home (iOS 16.4 o successivo).
