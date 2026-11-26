@@ -986,12 +986,23 @@ html body .bnav .bnav-logo:active .ic { transform: scale(.94); }
 @keyframes hint-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (min-width: 761px) { .menu-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .menu-hint { animation: none; } }
+
+/* Logo «in corsa» */
+.sf-logo { display: block; height: 1em; width: auto; overflow: visible; }
+.sf-logo-lines { stroke: var(--steel); }
+.brand { font-size: 26px; color: var(--on-iron); }
+.brand .sf-logo { height: 26px; }
+html body .auth-brand { font-size: 0; line-height: 0; margin: 0 0 18px; color: var(--on-iron); }
+html body .auth-brand .sf-logo { height: 58px; }
+.oggi-logo { display: block; color: var(--ink); margin: 0 0 12px; }
+.oggi-logo .sf-logo { height: 36px; }
+.oggi-logo .sf-logo-lines { stroke: var(--ink-muted); }
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#settimana" aria-label="starfit+, vai alla settimana"><span>starfit<em>+</em></span></a>
+    <a class="brand" href="#oggi" aria-label="starfit+, vai a Oggi"><svg class="sf-logo" viewBox="0 0 168 44" role="img" aria-label="starfit+"><text x="12" y="33" transform="skewX(-13)" font-family="Inter Tight, Inter, system-ui, sans-serif" font-weight="800" font-size="33" letter-spacing="-1.4" fill="currentColor">starfit</text><g class="sf-logo-lines" fill="none" stroke-width="3.2" stroke-linecap="round"><path d="M101 15h9M98 22h9M101 29h8"/></g><g transform="translate(113 5) skewX(-14)" fill="#E0321B"><rect x="12.5" y="1" width="8.5" height="32" rx="1.8"/><rect x="1" y="12.8" width="31.5" height="8.5" rx="1.8"/></g></svg></a>
     <nav class="tabs" id="tabs" aria-label="Sezioni"></nav>
     <button class="sw-open" id="sw-open" type="button" title="Timer di recupero e cronometro"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9.5V6.5M6 1.5h4M12.5 4.5l1-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">Recupero</span></button>
     <div class="acct-wrap"><button class="acct" id="acct" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Il tuo account" hidden><span class="acct-i">?</span></button>

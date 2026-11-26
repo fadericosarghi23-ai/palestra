@@ -1,6 +1,7 @@
 /* starfit+ — account: accesso una volta sola, dati salvati nell'account e sincronizzati.
    La sessione resta sul dispositivo finché non premi "Esci".
    Funziona anche offline: le modifiche si salvano sul telefono e partono appena torna la rete. */
+window.FitLogo = () => '<svg class="sf-logo" viewBox="0 0 168 44" role="img" aria-label="starfit+"><text x="12" y="33" transform="skewX(-13)" font-family="Inter Tight, Inter, system-ui, sans-serif" font-weight="800" font-size="33" letter-spacing="-1.4" fill="currentColor">starfit</text><g class="sf-logo-lines" fill="none" stroke-width="3.2" stroke-linecap="round"><path d="M101 15h9M98 22h9M101 29h8"/></g><g transform="translate(113 5) skewX(-14)" fill="#E0321B"><rect x="12.5" y="1" width="8.5" height="32" rx="1.8"/><rect x="1" y="12.8" width="31.5" height="8.5" rx="1.8"/></g></svg>';
 (function () {
   const LS = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -152,7 +153,7 @@
     box.id = 'auth';
     box.className = 'auth';
     box.innerHTML = `<div class="auth-in">
-      <p class="auth-brand">starfit<em>+</em></p>
+      <p class="auth-brand">${window.FitLogo()}</p>
       <p class="auth-sub">Accedi per aprire la tua scheda.</p>
       <form class="auth-form" id="auth-form" novalidate>
         <label for="auth-user">Nome utente</label>
