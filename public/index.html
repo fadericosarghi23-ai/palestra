@@ -16,7 +16,7 @@
 <title>starfit+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: banda nera di navigazione + hero nero, pagina grigio acciaio, schede esercizio con pannello animazione nero.
    Proporzioni: 60% grigio acciaio · 30% nero ferro · 10% rosso fuoco */
@@ -38,8 +38,8 @@
   --prop: #98A1A9;
   --prop-soft: #3A3F45;
   --floor: #2A2E33;
-  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
-  --body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -814,6 +814,69 @@ body.auth-mode > header, body.auth-mode > #hero, body.auth-mode > main, body.aut
 .hero-ed-a { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .hero-ed-a .sb-btn { min-height: 44px; padding-inline: 22px; }
 .hero-ed-a .btn-ghost { min-height: 44px; color: var(--on-iron); border-color: var(--iron-3); }
+
+/* ===================== Stile sobrio =====================
+   Stessi colori (acciaio 60%, nero ferro 30%, rosso 10%), aspetto più adulto:
+   niente corsivo, titoli in minuscolo, pesi più leggeri, angoli al posto delle pillole, bordi sottili. */
+html body { font-family: var(--body); font-feature-settings: "cv11", "ss01"; letter-spacing: -0.006em; -webkit-font-smoothing: antialiased; }
+html body *, html body *::before, html body *::after { font-style: normal !important; }
+html body :is(h1, h2, h3, h4, .big, .sub, .tc-t, .dn, .block-h, .pillar h3, .ex h3, .panel h3, .mob-link b, .tip b, .quick b, .pager b, .install > b, .acct-name, .ed-h b, .f-pick h4, .vid-none b, .home-h, .wt-sec h3, .nw-t, .f-mh h3, .t-kind) {
+  text-transform: none !important; letter-spacing: -0.02em !important; font-family: var(--display); }
+/* titoli */
+html body h2 { font-size: 24px; font-weight: 700; line-height: 1.15; }
+html body .dayhead .big { font-size: clamp(30px, 6vw, 44px); font-weight: 700; line-height: 1.05; }
+html body .dayhead .sub { font-size: 17px; font-weight: 500; color: var(--ink-muted); margin-top: 2px; }
+html body .tc-t { font-size: clamp(24px, 5vw, 32px); font-weight: 700; line-height: 1.1; }
+html body .ex h3 { font-size: 19px; font-weight: 650; line-height: 1.2; }
+html body .panel h3, html body .wt-sec h3, html body .f-mh h3 { font-size: 17px; font-weight: 650; }
+html body .pillar h3 { font-size: 20px; font-weight: 650; }
+html body .day-tile .dn { font-size: 19px; font-weight: 650; }
+html body .block-h { font-size: 13px; font-weight: 600; letter-spacing: .08em !important; text-transform: uppercase !important; color: var(--ink-muted); font-family: var(--body); }
+html body .home-h { font-size: 13px; font-weight: 600; letter-spacing: .08em !important; text-transform: uppercase !important; color: var(--ink-muted); font-family: var(--body); }
+html body .mob-link b, html body .quick b, html body .pager b, html body .tip b { font-size: 16px; font-weight: 600; }
+html body .nw-t { font-size: 24px; font-weight: 700; }
+html body .acct-name { font-size: 20px; font-weight: 650; }
+/* numeri: puliti e allineati */
+html body :is(.stat b, .dur b, .dose .sets, .num b, .f-k b, .t-time, .wk-n, .wt-ring b, .w-in input) { font-family: var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; text-transform: none; }
+html body .stat b { font-size: 24px; font-weight: 650; }
+html body .dur b { font-size: 26px; font-weight: 650; }
+html body .dose .sets { font-size: 22px; font-weight: 650; }
+html body .num b, html body .wt-ring b { font-size: 22px; font-weight: 650; }
+html body .f-k b { font-size: 34px; font-weight: 650; }
+html body .w-in input { font-size: 24px; font-weight: 600; }
+html body .t-time { font-weight: 600; }
+/* etichette piccole: maiuscolo leggero, non urlato */
+html body :is(.chip, .md, .cat, .eyebrow, .tc-k, .view-tag, .today-tag, .acct-k, .kicker, th, .stat span) { font-family: var(--body); font-weight: 600; letter-spacing: .06em; }
+html body .chip { font-size: 11px; padding: 4px 8px; border-radius: 6px; }
+html body .md, html body .cat, html body .tc-k { font-size: 11px; }
+/* testata: linea sottile al posto della barra rossa */
+html body .top { border-bottom: 1px solid var(--iron-3); }
+html body .brand { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; text-transform: none; font-size: 20px; }
+html body .tabs a { font-family: var(--body); font-weight: 500; font-size: 14px; text-transform: none; letter-spacing: 0; }
+/* pulsanti e selettori: angoli, non pillole */
+html body :is(.sb-btn, .btn-ghost, .tc-cta, .auth-go, .ed-open, .swap-btn, .fchip, .d-rate button, .f-portions button, .t-ctrl button, .sb-undo, .slow, .sw-open, .search, .mday-sw button, .media-sw button, .auth-tabs button, .rd-opts button, .fp-meals button, .fp-mb, .bd-pose label, .pg-close, .pg-undo, .pg-ghost, .nw-upd, .hero-edit) { border-radius: 10px; }
+html body :is(.mday-sw, .media-sw, .auth-tabs) { border-radius: 12px; }
+html body :is(.mus span, .sea-tag, .rd-l em) { border-radius: 6px; }
+html body :is(.sb-btn, .tc-cta, .auth-go) { font-family: var(--body); font-weight: 600; letter-spacing: 0; text-transform: none; }
+html body .btn-ghost { font-weight: 500; }
+html body .tc-cta { padding: 12px 18px; }
+/* riquadri: bordi sottili, angoli coerenti */
+html body .panel { border-radius: 14px; border-color: rgba(17, 19, 22, .10); }
+html body .panel.dark { border-color: var(--iron); }
+html body .today-card { border-radius: 16px; }
+html body .ex { border-radius: 14px; }
+html body .day-tile { border-radius: 12px; }
+/* titoli dei moduli e sezioni apribili: minuscolo, pesi misurati */
+html body :is(.how summary, .rd-l, .rd-t b, .rd-gyms span, .pg-cnt, .pg-name, .pg-big, .pg-hold, .pg-start, .bd-day h4, .bd-row b, .fp-res h4, .fp-sg h4, .sea-next h4, .sea-prep h4, .sea-hist h4, .nw-t) { text-transform: none !important; letter-spacing: -0.01em !important; font-family: var(--display); }
+html body .how summary { font-size: 15px; font-weight: 600; }
+html body .rd-l { font-size: 13px; font-weight: 600; color: var(--ink-muted); }
+html body .pg-name { font-size: 30px; font-weight: 700; line-height: 1.1; }
+html body .pg-big { font-size: 24px; font-weight: 650; }
+html body :is(.pg-start, .pg-hold) { font-size: 18px; font-weight: 600; font-family: var(--body); }
+html body :is(.bd-day h4, .fp-res h4, .fp-sg h4, .sea-next h4, .sea-prep h4, .sea-hist h4) { font-size: 16px; font-weight: 650; }
+html body :is(.pg-blk, .rd-stat span, .nw-k) { font-family: var(--body); font-weight: 600; letter-spacing: .06em; }
+/* testo un po' più arioso */
+html body p, html body li { line-height: 1.55; }
 </style>
 </head>
 <body>
