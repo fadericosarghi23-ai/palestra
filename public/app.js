@@ -22,7 +22,10 @@ window.FitAccount.whenReady(function () {
   /* Giorno della partita (solo per i programmi che lo prevedono): cambia tutta la settimana */
   const MATCHDAY = PROG0.layouts ? (PROG0.layouts[store.get('matchday', 'dom')] ? store.get('matchday', 'dom') : 'dom') : null;
   const PROG = Object.assign({}, PROG0, MATCHDAY ? PROG0.layouts[MATCHDAY] : {});
-  const MOB = PROG.mob, DAYS_SRC = PROG.days;
+  const MOB0 = PROG.mob, DAYS_SRC = PROG.days;
+  // Mobilità: quella della scheda, oppure quella modificata da te
+  const mobLoad = () => { const c = store.get('mob-plan', null); const l = Array.isArray(c) ? c.filter(m => m && EX[m.ex]) : []; return l.length ? l : MOB0; };
+  let MOB = mobLoad();
   const foot = document.querySelector('footer .wrap'); if (foot) foot.textContent = PROG.footer;
 
   /* Scheda: quella di base, con le modifiche fatte dall'utente per ogni giorno.
@@ -1043,12 +1046,79 @@ window.FitAccount.whenReady(function () {
     return html;
   }
 
+  let mobEdit = false;
+  const mobCustom = () => Array.isArray(store.get('mob-plan', null)) && store.get('mob-plan', []).length > 0;
   function viewMob() {
-    return `<div class="dayhead"><div><div class="meta"><span class="chip act">Ogni giorno</span></div>
-      <p class="big">Mobilità</p><p class="sub">Anche e schiena più libere, meno rigidità</p>
-      <p class="goal">Dieci minuti, anche a casa, anche la sera davanti alla TV. Fai gli esercizi in quest'ordine.</p></div>
-      <div class="dur"><b>10′</b><span>Ogni giorno</span></div></div>
+    const head = `<div class="dayhead"><div><div class="meta"><span class="chip act">Ogni giorno</span></div>
+      <p class="big">Mobilità</p><p class="sub">${mobEdit ? 'Modifica la routine' : 'Anche e schiena più libere, meno rigidità'}</p>
+      <p class="goal">${mobEdit ? 'Cambia tempi e ripetizioni, sposta o togli gli esercizi e aggiungine di nuovi. Si salva da solo nel tuo account.' : 'Dieci minuti, anche a casa, anche la sera davanti alla TV. Fai gli esercizi in quest\'ordine.'}</p></div>
+      <div class="dur"><b>${MOB.length}</b><span>esercizi</span></div></div>`;
+    if (!mobEdit) return head + `<div class="edit-bar"><button type="button" class="ed-open" id="mob-edit">✎ Modifica la mobilità</button>${mobCustom() ? '<span class="ed-flag">Routine personalizzata</span>' : ''}</div>
       <div class="grid">${MOB.map(m => card(m.ex, { s: m.s, hold: m.hold })).join('')}</div>`;
+    const rows = MOB.map((m, i) => `<li class="ed-row" data-mi="${i}">
+        <div class="ed-h"><span class="ed-n">${i + 1}</span><b>${esc(EX[m.ex].name)}</b>
+          <span class="ed-mv"><button type="button" data-mob="up" aria-label="Sposta su"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-mob="down" aria-label="Sposta giù"${i === MOB.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-mob="del" class="ed-del" aria-label="Rimuovi ${esc(EX[m.ex].name)}">Rimuovi</button></span></div>
+        <div class="ed-f"><label>Ripetizioni o tempo<input data-mobf="s" value="${esc(m.s || '')}" placeholder="8 per lato" autocomplete="off"></label>
+          <label>Secondi da tenere<input data-mobf="hold" inputmode="numeric" value="${m.hold ? +m.hold : ''}" placeholder="es. 40" autocomplete="off"></label></div></li>`).join('');
+    return head + `<ol class="ed-list" id="mob-list">${rows || '<li class="ed-empty">Nessun esercizio. Aggiungine uno qui sotto.</li>'}</ol>
+      <section class="panel ed-add"><h3>Aggiungi un esercizio</h3>
+        <div class="ed-f">
+          <label class="wide">Cerca<input id="mob-add-q" type="search" autocomplete="off" placeholder="Anche, schiena, caviglie, stretching…"></label>
+          <label class="wide">Esercizio<select id="mob-add-ex">${mobOpts('')}</select></label>
+          <label>Ripetizioni o tempo<input id="mob-add-s" value="8 per lato" autocomplete="off"></label>
+          <label>Secondi da tenere<input id="mob-add-h" inputmode="numeric" placeholder="facoltativo" autocomplete="off"></label>
+        </div>
+        <button type="button" class="sb-btn ed-add-go" id="mob-add-go">+ Aggiungi alla mobilità</button>
+      </section>
+      <div class="ed-foot"><button type="button" class="tc-cta ed-done" id="mob-done">Fatto <b>→</b></button>
+        ${mobCustom() ? '<button type="button" class="btn-ghost" id="mob-reset">Ripristina la routine della scheda</button>' : ''}</div>`;
+  }
+  // Esercizi da aggiungere: di base mobilità, stretching e recupero; con la ricerca tutta la libreria
+  function mobOpts(q) {
+    const words = fold(q || '').split(/\s+/).filter(Boolean), CATS = ['Mobilità', 'Stretching', 'Recupero', 'Riscaldamento', 'Attivazione'];
+    const ids = Object.keys(EX).filter(id => words.length ? words.every(x => exText(id, EX[id]).includes(x)) : CATS.includes(EX[id].cat) && forMe(EX[id]))
+      .sort((x, y) => (CATS.indexOf(EX[x].cat) + 1 || 9) - (CATS.indexOf(EX[y].cat) + 1 || 9) || EX[x].name.localeCompare(EX[y].name, 'it')).slice(0, 250);
+    if (!ids.length) return '<option value="" disabled selected>Nessun esercizio trovato</option>';
+    const by = {}; ids.forEach(id => (by[EX[id].cat] = by[EX[id].cat] || []).push(id));
+    return Object.keys(by).map(c => `<optgroup label="${esc(c)}">${by[c].map(id => `<option value="${id}">${esc(EX[id].name)}</option>`).join('')}</optgroup>`).join('');
+  }
+  const mobSave = list => { store.set('mob-plan', list.map(m => { const o = { ex: m.ex, s: m.s || '' }; if (+m.hold > 0) o.hold = Math.min(600, Math.round(+m.hold)); return o; })); MOB = mobLoad(); };
+  function onMobClick(e) {
+    const t = e.target;
+    if (t.closest('#mob-edit')) { mobEdit = true; route(); return true; }
+    if (t.closest('#mob-done')) { mobEdit = false; route(); return true; }
+    const b = t.closest('[data-mob]');
+    if (b) {
+      const list = JSON.parse(JSON.stringify(MOB)), i = +b.closest('.ed-row').dataset.mi;
+      if (b.dataset.mob === 'up' && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+      if (b.dataset.mob === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
+      if (b.dataset.mob === 'del') {
+        if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Conferma'; b.classList.add('arm'); setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Rimuovi'; b.classList.remove('arm'); } }, 3500); return true; }
+        list.splice(i, 1);
+      }
+      buzz(); mobSave(list); route(true); return true;
+    }
+    if (t.closest('#mob-add-go')) {
+      const ex = document.getElementById('mob-add-ex').value; if (!ex || !EX[ex]) return true;
+      const list = JSON.parse(JSON.stringify(MOB)), hd = parseInt(document.getElementById('mob-add-h').value, 10);
+      list.push({ ex, s: (document.getElementById('mob-add-s').value || '').trim() || '8 per lato', hold: hd > 0 ? hd : 0 });
+      buzz(); mobSave(list); route(true);
+      const last = document.querySelector('#mob-list .ed-row:last-child'); if (last) { last.scrollIntoView({ block: 'center' }); flashSaved(last); }
+      return true;
+    }
+    const rs = t.closest('#mob-reset');
+    if (rs) {
+      if (rs.dataset.confirm !== '1') { rs.dataset.confirm = '1'; rs.textContent = 'Tocca di nuovo per ripristinare'; setTimeout(() => { if (rs.isConnected) { rs.dataset.confirm = ''; rs.textContent = 'Ripristina la routine della scheda'; } }, 4000); return true; }
+      store.set('mob-plan', []); MOB = mobLoad(); buzz(); route(true); return true;
+    }
+    return false;
+  }
+  function onMobChange(t) {
+    const row = t.closest('#mob-list .ed-row'); if (!row || !t.dataset.mobf) return false;
+    const list = JSON.parse(JSON.stringify(MOB)), m = list[+row.dataset.mi];
+    if (t.dataset.mobf === 's') m.s = t.value.trim();
+    if (t.dataset.mobf === 'hold') { const v = parseInt(t.value, 10); m.hold = v > 0 ? v : 0; t.value = m.hold || ''; }
+    mobSave(list); flashSaved(row); return true;
   }
 
   let libFilter = 'Per te', libQuery = '', libShown = 24;
@@ -1247,6 +1317,7 @@ window.FitAccount.whenReady(function () {
     if (cal && now && cal.scrollWidth > cal.clientWidth) cal.scrollLeft = Math.max(0, now.offsetLeft - cal.offsetLeft - 16);
   }
   function route(keep) {
+    MOB = mobLoad();
     syncWatch();
     // testo in fondo: con altezza e peso del profilo
     { const f = document.querySelector('footer .wrap'), hs = heroStats(); if (f) f.textContent = PROG.footer.replace(PROG.stats[0][0], hs[0].v).replace(PROG.stats[1][0], hs[1].v); }
@@ -1322,6 +1393,7 @@ window.FitAccount.whenReady(function () {
     if (someH('change', e)) return;
     if (e.target.closest && e.target.closest('.wt-prefs')) return onPrefChange();
     if (e.target.closest && e.target.closest('#ed-list') && e.target.dataset.f) return onEditChange(e.target);
+    if (e.target.closest && e.target.closest('#mob-list') && onMobChange(e.target)) return;
     const k = e.target.dataset && e.target.dataset.key;
     if (k) { if (e.target.checked) { done[k] = true; markTrained(k); } else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
@@ -1341,6 +1413,7 @@ window.FitAccount.whenReady(function () {
     if (e.target.id === 'f-g') updateFoodPrev();
     if (e.target.classList && e.target.classList.contains('bad')) e.target.classList.remove('bad');
     if (e.target.id === 'q') { libQuery = e.target.value.trim(); libShown = 24; clearTimeout(libTimer); libTimer = setTimeout(applyLib, 180); }
+    if (e.target.id === 'mob-add-q') { document.getElementById('mob-add-ex').innerHTML = mobOpts(e.target.value); }
     if (e.target.id === 'ed-add-q') { const sel = document.getElementById('ed-add-ex'); sel.innerHTML = edOpts(e.target.value); }
     const m = /^t-(\d+)-(\d+)$/.exec(e.target.id || '');
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
@@ -1350,6 +1423,7 @@ window.FitAccount.whenReady(function () {
     if (someH('click', e)) return;
     if (onHeroClick(e)) return;
     if (onEditClick(e)) return;
+    if (onMobClick(e)) return;
     if (onFoodClick(e)) return;
     if (e.target.closest('[data-copy], #wt-make, #wt-new, #push-on, #push-test, #push-off')) { onWatchClick(e); return; }
     const swb = e.target.closest('[data-swap]');
@@ -1408,7 +1482,7 @@ window.FitAccount.whenReady(function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', () => { toggleMore(false); const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
+  window.addEventListener('hashchange', () => { mobEdit = false; toggleMore(false); const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
     if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();
