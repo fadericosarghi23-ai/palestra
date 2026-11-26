@@ -25,6 +25,14 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 - Apple Watch con Comandi rapidi: scheda di oggi, prossimo esercizio con Fatto e recupero, peso, dati della Salute ogni sera (pagina «Apple Watch» nel menu dell'account)
 - calendario degli allenamenti da iscrivere sull'iPhone, con avviso 1 ora prima
 - promemoria con notifiche (peso, allenamento, vigilia, mobilità, cibo), anche sull'orologio
+- carichi e ripetizioni per ogni serie, carico consigliato per la volta dopo, record e grafico dei progressi
+- modalità allenamento a tutto schermo: un esercizio alla volta, recupero automatico, schermo sempre acceso
+- foto di progresso (solo sul telefono) con confronto prima/dopo e misure in cm
+- «Come stai oggi?» con sonno e battito a riposo dal Watch: versione leggera della seduta quando serve
+- riepilogo della settimana con consigli, sfida della costanza tra gli account (solo punti)
+- macro che cambiano con il giorno (campo, partita, palestra) e con le calorie del Watch
+- codice a barre degli alimenti (Open Food Facts), pasti preferiti, «Ripeti ieri», lista della spesa, acqua
+- blocco 2 dopo il 14 febbraio, costruito sui test e con esercizi nuovi
 - registro dei test, alimentazione e regole
 
 Scheda modificata, serie fatte, peso, cibo, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.
@@ -41,6 +49,11 @@ public/                 il sito: è l'unica cartella pubblicata
   data.js               esercizi e programmi (terzino, glutei)
   food.js               alimenti con valori per 100 g
   library.js            libreria completa degli esercizi
+  progress.js           carichi, record e modalità allenamento
+  body.js               foto e misure (#progressi)
+  daily.js              come stai oggi, riepilogo, macro del giorno, sonno dal Watch
+  foodplus.js           codice a barre, preferiti, lista della spesa, acqua
+  season.js             blocco 2 e sfida della settimana
   videos.js             video YouTube per esercizio
   anim.js               animazioni degli esercizi
   timer.js              timer di recupero e cronometro

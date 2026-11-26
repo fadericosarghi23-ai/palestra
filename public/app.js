@@ -11,6 +11,12 @@ window.FitAccount.whenReady(function () {
   /* ---------- dati salvati nell'account (vedi account.js) ---------- */
   const store = window.FitAccount.store;
 
+  /* Moduli aggiuntivi (progress.js, body.js, daily.js, foodplus.js, season.js): si registrano in window.FitPlugins
+     e ricevono FitApp. Ogni gancio restituisce HTML (o true se ha gestito un evento). */
+  const HK = { home: [], watch: [], dayTop: [], card: [], item: [], food: [], meal: [], plan: [], views: {}, click: [], change: [], input: [], after: [], macros: [] };
+  const runH = (name, ...a) => HK[name].map(f => { try { return f(...a) || ''; } catch (e) { console.error('starfit+ modulo', name, e); return ''; } }).join('');
+  const someH = (name, e) => HK[name].some(f => { try { return f(e) === true; } catch (x) { console.error('starfit+ modulo', name, x); return false; } });
+
   /* Programma dell'account: lo sceglie chi crea l'account (admin.mjs crea <nome> --programma <id>) */
   const PROG0 = PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
   /* Giorno della partita (solo per i programmi che lo prevedono): cambia tutta la settimana */
@@ -233,13 +239,23 @@ window.FitAccount.whenReady(function () {
     const undo = key && sets > 1 && n > 0 ? `<button type="button" class="sb-undo" data-act="undo" aria-label="Togli una serie">↺</button>` : '';
     return `<div class="setbar" data-key="${key || ''}" data-sets="${sets}" data-rest="${rest}" data-name="${esc(EX[id].name)}">${dots}<span class="sb-acts">${holdBtn}${main}${undo}</span></div>`;
   }
+  // Giorni in cui hai segnato esercizi come fatti: { 'YYYY-MM-DD': [pk della seduta] } (riepilogo e sfida)
+  function markTrained(uid) {
+    const d = days().find(x => (x.items || []).some(i => i.uid === uid)); if (!d) return;
+    const t = store.get('trained', {}), k = dkey(new Date()), list = t[k] || [];
+    if (list.includes(d.pk)) return;
+    t[k] = list.concat(d.pk);
+    const lim = dkey(new Date(Date.now() - 120 * DAY)); Object.keys(t).forEach(x => { if (x < lim) delete t[x]; });
+    store.set('trained', t);
+  }
+  const itemView = uid => { const d = days().find(x => (x.items || []).some(i => i.uid === uid)), it = findItem(uid); return it && d ? HK.item.reduce((x, f) => { try { return f(x, d) || x; } catch (e) { return x; } }, it) : it; };
   function refreshSetBar(sb) {
     const card = sb.closest('.ex'), key = sb.dataset.key;
-    const it = findItem(key);
+    const it = itemView(key);
     if (!it) return;
     sb.outerHTML = setBar(it.ex, it, key);
     if (setsDone[key] >= parseSets(it.s)) {
-      done[key] = true; store.set('done', done);
+      done[key] = true; store.set('done', done); markTrained(key);
       const cb = card.querySelector('.done input'); if (cb) cb.checked = true;
       card.classList.add('is-done');
     }
@@ -257,6 +273,7 @@ window.FitAccount.whenReady(function () {
       if (n >= sets) return;
       setsDone[key] = n + 1; store.set('sets', setsDone);
       refreshSetBar(sb);
+      document.dispatchEvent(new CustomEvent('fit:set', { detail: { key, id: (findItem(key) || {}).ex, n: n + 1, sets } }));
       if (rest) T.countdown(rest, `${name} · ${n + 1}/${sets} ${n + 1 === sets ? '· poi passa al prossimo esercizio' : 'serie fatte'}`, 'rest');
     }
   }
@@ -265,7 +282,7 @@ window.FitAccount.whenReady(function () {
     const e = EX[id];
     const isDone = key && done[key];
     const restTxt = it && it.r ? (it.r === '—' ? '<span class="rest">Nessun recupero</span>' : `<span class="rest">Recupero <b>${esc(it.r)}</b></span>`) : '';
-    const dose = it ? `<div class="dose"><span class="sets">${esc(it.s)}</span>${it.per ? `<span class="per">${esc(it.per)}</span>` : ''}${restTxt}</div>${setBar(id, it, key)}${key ? (swapFor === key ? altHTML(id, key) : `<button type="button" class="swap-btn" data-swap="${esc(key)}">⇄ Cambia esercizio</button>`) : ''}` : (usage(id) ? `<p class="where">Nella scheda: ${usage(id)}</p>` : '');
+    const dose = it ? `<div class="dose"><span class="sets">${esc(it.s)}</span>${it.per ? `<span class="per">${esc(it.per)}</span>` : ''}${restTxt}</div>${setBar(id, it, key)}${key ? runH('card', id, it, key) : ''}${key ? (swapFor === key ? altHTML(id, key) : `<button type="button" class="swap-btn" data-swap="${esc(key)}">⇄ Cambia esercizio</button>`) : ''}` : (usage(id) ? `<p class="where">Nella scheda: ${usage(id)}</p>` : '');
     const v = VIDEOS[id];
     const ak = ANIM[id] ? id : (e.anim && ANIM[e.anim] ? e.anim : null);
     const view = ((ak && EX[ak]) || e).view === 'frontale' ? 'Vista frontale' : 'Vista laterale';
@@ -399,11 +416,14 @@ window.FitAccount.whenReady(function () {
   }
 
   /* ---------- calendario: 12 settimane, 23 nov 2026 → 14 feb 2027 ---------- */
-  const START = new Date(2026, 10, 23), WEEKS = 12, DAY = 86400000;
-  const END = new Date(START.getTime() + (WEEKS * 7 - 1) * DAY);
+  const BLOCK = Math.max(1, Math.min(9, +store.get('block', 1) || 1));
+  const START = new Date(2026, 10, 23 + (BLOCK - 1) * 84), WEEKS = 12, DAY = 86400000;
+  // date sul calendario (non in millisecondi): restano a mezzanotte anche col cambio dell'ora legale
+  const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const END = addD(START, WEEKS * 7 - 1);
   const fmt = (d, o) => d.toLocaleDateString('it-IT', o || { day: 'numeric', month: 'short' });
-  const weekStart = n => new Date(START.getTime() + (n - 1) * 7 * DAY);
-  const testDate = n => new Date(weekStart(n).getTime() + (PROG.testDay || 0) * DAY); // giorno dei test del programma
+  const weekStart = n => addD(START, (n - 1) * 7);
+  const testDate = n => addD(weekStart(n), PROG.testDay || 0); // giorno dei test del programma
   const TEST_WEEKS = [1, 4, 8, 12];
   function today0() { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
   function currentWeek() { const d = Math.floor((today0() - START) / DAY); return d < 0 ? 0 : d >= WEEKS * 7 ? WEEKS + 1 : Math.floor(d / 7) + 1; }
@@ -489,7 +509,9 @@ window.FitAccount.whenReady(function () {
 
   /* ---------- diario del cibo: cosa hai mangiato e stima dei macro ---------- */
   const MEALS = [['col', 'Colazione'], ['pra', 'Pranzo'], ['spu', 'Spuntini'], ['cen', 'Cena']];
-  const MAC = PROG.macros || { kcal: [2000, 2200], p: [100, 120], c: [230, 280], f: [60, 75] };
+  const MAC0 = PROG.macros || { kcal: [2000, 2200], p: [100, 120], c: [230, 280], f: [60, 75] };
+  let MAC = MAC0;
+  const macrosFor = dk => HK.macros.reduce((m, f) => { try { return f(dk, m) || m; } catch (e) { return m; } }, JSON.parse(JSON.stringify(MAC0)));
   const n0 = v => Math.round(v).toLocaleString('it-IT');
   const n1 = v => (Math.round(v * 10) / 10).toLocaleString('it-IT');
   const fold = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -616,12 +638,14 @@ window.FitAccount.whenReady(function () {
   }
   function viewFood() {
     const today = dkey(new Date()); if (!foodDay || foodDay > today) foodDay = today;
+    MAC = macrosFor(foodDay);
     const list = dayFood(foodDay), t = sumFood(list), isToday = foodDay === today;
     const dayLbl = (isToday ? 'Oggi · ' : foodDay === dkey(new Date(Date.now() - DAY)) ? 'Ieri · ' : '') + fmt(kdate(foodDay), { weekday: 'long', day: 'numeric', month: 'long' });
     const meals = MEALS.map(([m, lbl]) => {
       const es = list.filter(e => e.m === m), st = sumFood(es);
       return `<section class="panel f-meal" id="meal-${m}"><div class="f-mh"><h3>${lbl}</h3>${es.length ? `<span>${n0(st.k)} kcal · P ${n0(st.p)} g</span>` : ''}</div>
         ${es.length ? `<ul class="f-list">${es.map(e => `<li><span class="f-n"><b>${esc(e.n)}</b><small>${n0(e.g)} g · P ${n1(e.p)} · C ${n1(e.c)} · G ${n1(e.f)}</small></span><em>${n0(e.k)}<small>kcal</small></em><button type="button" class="f-del" data-fdel="${esc(e.id)}" aria-label="Rimuovi ${esc(e.n)}">×</button></li>`).join('')}</ul>` : ''}
+        ${runH('meal', m, foodDay, es)}
         ${foodAdd === m ? foodPickerHTML(m) : `<button type="button" class="f-add" data-fadd="${m}">+ Aggiungi a ${lbl.toLowerCase()}</button>`}
       </section>`;
     }).join('');
@@ -629,6 +653,7 @@ window.FitAccount.whenReady(function () {
         <p class="big">Cibo</p><p class="sub">Cosa hai mangiato e i macro della giornata</p></div></div>
       <nav class="f-days" aria-label="Giorno"><button type="button" data-fday="-1" aria-label="Giorno prima">←</button><b>${dayLbl}</b><button type="button" data-fday="1" aria-label="Giorno dopo"${isToday ? ' disabled' : ''}>→</button></nav>
       ${foodTotalsHTML(t)}
+      ${runH('food', foodDay, t)}
       ${isToday ? foodSuggestHTML(t) : ''}
       <div class="f-meals">${meals}</div>
       <p class="small f-note">Le calorie e i macro sono stime fatte con valori medi per 100 g. Per un prodotto confezionato è più preciso crearlo dall'etichetta. Obiettivi della tua scheda: ${n0(MAC.kcal[0])}–${n0(MAC.kcal[1])} kcal e ${n0(MAC.p[0])}–${n0(MAC.p[1])} g di proteine al giorno.</p>`;
@@ -714,7 +739,7 @@ window.FitAccount.whenReady(function () {
   }
   const wUrl = (what, extra) => location.origin + '/api/w/' + what + '?k=' + (LSW.get(codeKey()) || 'IL-TUO-CODICE') + (extra || '');
   const urlBox = (lbl, u) => `<div class="wt-url"><span>${esc(lbl)}</span><code>${esc(u)}</code><button type="button" class="btn-ghost wt-copy" data-copy="${esc(u)}">Copia</button></div>`;
-  const PUSH_LBL = { peso: ['Pesati', 'se non hai ancora segnato il peso'], allenamento: ['Allenamento di oggi', 'nei giorni di palestra, campo e partita'], vigilia: ['Vigilia della partita', 'la sera prima: niente fatica, carboidrati, sonno'], mobilita: ['Mobilità', 'i 10′ di ogni giorno'], cibo: ['Cosa hai mangiato', 'se oggi hai segnato meno di 3 alimenti'] };
+  const PUSH_LBL = { peso: ['Pesati', 'se non hai ancora segnato il peso'], allenamento: ['Allenamento di oggi', 'nei giorni di palestra, campo e partita'], vigilia: ['Vigilia della partita', 'la sera prima: niente fatica, carboidrati, sonno'], mobilita: ['Mobilità', 'i 10′ di ogni giorno'], cibo: ['Cosa hai mangiato', 'se oggi hai segnato meno di 3 alimenti'], riepilogo: ['Riepilogo della settimana', 'la domenica sera'] };
   function rings() {
     if (PROG.id === 'glutei') return [['Movimento', '350–450 kcal', 'calorie attive al giorno: abbastanza per stare bene, senza consumare il muscolo che stai costruendo'], ['Esercizio', '30 min', 'le 3 palestre lo superano da sole; negli altri giorni basta una camminata veloce'], ['In piedi', '10–12 ore', 'alzati e muoviti 1′ ogni ora: aiuta anche schiena e postura'], ['Passi', '7.000–9.000', 'nei giorni di riposo: camminata di 20–40′'], ['Battito', 'zona 2', 'nelle camminate e nel cardio leggero: respiri bene e riesci a parlare']];
     return [['Movimento', '700–850 kcal', 'calorie attive al giorno: con il deficit della dieta ti fa perdere grasso senza perdere esplosività'], ['Esercizio', '45–60 min', 'palestra e campo lo superano; nei giorni più leggeri basta la mobilità più 20′ di cyclette'], ['In piedi', '12 ore', 'il minimo per non stare fermo troppe ore'], ['Battito negli sprint', 'zona 4–5', 'nelle ripetute e nelle partenze; tra una e l\'altra recupera finché il battito scende in zona 2'], ['Recupero', 'FC a riposo', 'se al mattino è 5–7 battiti più alta del solito, oggi fai la seduta più leggera']];
@@ -782,6 +807,7 @@ window.FitAccount.whenReady(function () {
         <div class="wt-prefs">${prefRows}</div>
         <div class="f-act">${pushOK() ? (subHere ? '<button type="button" class="sb-btn" id="push-test">Manda una prova</button><button type="button" class="btn-ghost" id="push-off">Disattiva su questo telefono</button>' : '<button type="button" class="sb-btn" id="push-on">Attiva le notifiche</button>') : ''}</div></section>
 
+      ${runH('watch')}
       <section class="panel wt-sec"><h3>6 · Con Siri</h3>
         <ul class="list"><li>«Ehi Siri, <b>prossimo esercizio</b>» · «Ehi Siri, <b>scheda di oggi</b>»</li><li>«Ehi Siri, <b>segna peso</b>»</li><li>«Ehi Siri, <b>timer 90 secondi</b>»: funziona subito, senza comandi</li><li>«Ehi Siri, <b>avvia allenamento forza</b>»: il Watch registra battito e calorie della seduta</li></ul></section>
 
@@ -792,7 +818,7 @@ window.FitAccount.whenReady(function () {
   function watchActLine(dk) {
     const a = (store.get('watchAct', {}) || {})[dk];
     if (!a) return '';
-    const parts = [a.kcal != null ? n0(a.kcal) + ' kcal attive' : '', a.min != null ? a.min + ' min di esercizio' : '', a.passi != null ? n0(a.passi) + ' passi' : '', a.fcr != null ? 'FC a riposo ' + a.fcr : ''].filter(Boolean);
+    const parts = [a.kcal != null ? n0(a.kcal) + ' kcal attive' : '', a.min != null ? a.min + ' min di esercizio' : '', a.passi != null ? n0(a.passi) + ' passi' : '', a.fcr != null ? 'FC a riposo ' + a.fcr : '', a.sonno != null ? 'sonno ' + String(Math.round(a.sonno * 10) / 10).replace('.', ',') + ' h' : ''].filter(Boolean);
     return parts.length ? `<p class="wt-act">⌚ <b>Apple Watch</b> · ${parts.join(' · ')}</p>` : '';
   }
   async function copyText(t, btn) {
@@ -896,7 +922,7 @@ window.FitAccount.whenReady(function () {
         ${pr.tot ? `<span class="prog"><i style="width:${Math.round(pr.n / pr.tot * 100)}%"></i></span><span class="prog-l">${pr.n}/${pr.tot} fatti</span>` : '<span class="prog-l">Mobilità 10′</span>'}
       </a>`;
     }).join('');
-    return installHTML() + `<section class="sec">${todayHTML()}</section><div class="sec">${weightHTML(false)}</div>` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
+    return installHTML() + `<section class="sec">${todayHTML()}</section>${runH('home')}<div class="sec">${weightHTML(false)}</div>` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
       ${matchPickHTML()}<div class="week">${tiles}</div></section>
       <section class="sec quick">
         <a href="#mobilita"><b>Mobilità</b><span>10′ ogni giorno</span></a>
@@ -927,6 +953,7 @@ window.FitAccount.whenReady(function () {
         <p class="big">${d.d}</p><p class="sub">${esc(d.title)}</p>${d.goal ? `<p class="goal">${esc(d.goal)}</p>` : ''}</div>
         ${d.dur ? `<div class="dur"><b>${d.dur}</b><span>Durata</span></div>` : ''}</div>`;
     if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>${MOB.length} esercizi di mobilità, anche a casa</span></div><em>Apri →</em></a>`;
+    html += runH('dayTop', d);
     if (d.id === TODAY_ID()) html += weightHTML(true);
     html += `<div class="edit-bar"><button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
     const tips = PROG.tips && PROG.tips[d.type];
@@ -941,7 +968,7 @@ window.FitAccount.whenReady(function () {
       html += `<h3 class="block-h">${lbl}</h3><div class="grid">`;
       its.forEach(({ it, i }) => {
         if (it.link) html += `<a class="mob-link" href="#mobilita" style="margin:0"><div><b>Mobilità quotidiana · ${esc(it.s)}</b><br><span>La stessa routine di ogni giorno</span></div><em>Apri →</em></a>`;
-        else if (EX[it.ex]) html += card(it.ex, it, it.uid);
+        else if (EX[it.ex]) html += card(it.ex, HK.item.reduce((x, f) => { try { return f(x, d) || x; } catch (e) { return x; } }, it), it.uid);
       });
       html += `</div>`;
     });
@@ -1004,6 +1031,7 @@ window.FitAccount.whenReady(function () {
     const rows = TEST_WEEKS.map((n, i) => (i === 0 ? 'Inizio' : 'Settimana ' + n) + ' · ' + fmt(testDate(n), { weekday: 'short', day: 'numeric', month: 'short' }));
     const PL = PROG.plan, colsT = PL.tests;
     return `<div class="sec-h"><div><h2>Piano e alimentazione</h2><p class="kicker">${esc(PL.intro)}</p></div></div>
+    ${runH('plan')}
     <a class="mob-link wt-link" href="#watch"><div><b>⌚ Apple Watch e promemoria</b><br><span>Scheda sul polso, calendario, notifiche</span></div><em>Apri →</em></a>
     <div class="cols sec">
       <div class="panel dark"><h3>Blocchi da 4 settimane</h3>
@@ -1155,26 +1183,28 @@ window.FitAccount.whenReady(function () {
     let id = (location.hash || '').replace('#', '') || 'settimana';
     if (id === 'oggi') id = TODAY_ID();
     const day = dayById(id);
-    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch'].includes(id)) id = 'settimana';
+    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch'].includes(id) && !HK.views[id]) id = 'settimana';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
     unmount(main); unmount(hero);
     hero.innerHTML = id === 'settimana' ? heroHTML() : '';
-    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : viewHome();
+    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : HK.views[id] ? HK.views[id]() : viewHome();
     mountFigures(hero); mountFigures(main);
     if (id === 'esercizi') applyLib();
     if (id === 'settimana') centerCalendar();
     const ds = main.querySelector('.daystrip a[aria-current]');
     if (ds) { const strip = ds.parentElement; strip.scrollLeft = ds.offsetLeft - strip.clientWidth / 2 + ds.clientWidth / 2; }
     if (!keep) window.scrollTo(0, 0);
+    HK.after.forEach(f => { try { f(id, main, day); } catch (e) { console.error('starfit+ modulo after', e); } });
   }
 
   /* ---------- eventi ---------- */
   document.addEventListener('change', e => {
+    if (someH('change', e)) return;
     if (e.target.closest && e.target.closest('.wt-prefs')) return onPrefChange();
     if (e.target.closest && e.target.closest('#ed-list') && e.target.dataset.f) return onEditChange(e.target);
     const k = e.target.dataset && e.target.dataset.key;
-    if (k) { if (e.target.checked) done[k] = true; else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
+    if (k) { if (e.target.checked) { done[k] = true; markTrained(k); } else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
@@ -1185,6 +1215,7 @@ window.FitAccount.whenReady(function () {
   });
   let libTimer = 0;
   document.addEventListener('input', e => {
+    if (someH('input', e)) return;
     if (e.target.id === 'f-q') { foodQ = e.target.value; document.getElementById('f-res').innerHTML = foodResults(); }
     if (e.target.id === 'f-g') updateFoodPrev();
     if (e.target.classList && e.target.classList.contains('bad')) e.target.classList.remove('bad');
@@ -1194,6 +1225,7 @@ window.FitAccount.whenReady(function () {
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
+    if (someH('click', e)) return;
     if (onEditClick(e)) return;
     if (onFoodClick(e)) return;
     if (e.target.closest('[data-copy], #wt-make, #wt-new, #push-on, #push-test, #push-off')) { onWatchClick(e); return; }
@@ -1261,6 +1293,16 @@ window.FitAccount.whenReady(function () {
     done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
     syncSlow(); route(true);
   });
+  window.FitApp = {
+    store, EX, ANIM, PROG, PROG0, MATCHDAY, BLOCK, START, END, DAY, WEEKS, TEST_WEEKS, MEALS, MAC0, hooks: HK,
+    days, dayById, findItem, saveItems, swapExercise, alternatives, forMe, exMeta, card, mountFigures, unmount,
+    TODAY_ID, dkey, kdate, fmt, esc, fold, n0, n1, kg, parseKg, buzz, isPhone, reduced, today0, currentWeek, testDate, weekStart,
+    parseSets, parseRest, fmtSec, markTrained, itemView, mealNow, dayFood, setDayFood, sumFood, forGrams, allFoods, foodById, customFoods, macrosFor,
+    weights, wList, logs, dateOfDay, isStandalone,
+    route, api: (m, p, b) => window.FitAccount.api(m, p, b), user: () => window.FitAccount.user(),
+    get done() { return done; }, get sets() { return setsDone; }, get foodDay() { return foodDay; }, set foodDay(v) { foodDay = v; }
+  };
+  (window.FitPlugins || []).forEach(f => { try { f(window.FitApp); } catch (e) { console.error('starfit+ modulo', e); } });
   route();
   requestAnimationFrame(loop);
 });

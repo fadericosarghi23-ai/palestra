@@ -52,14 +52,15 @@
     if (b) b.dataset.status = s;
   }
   const statusText = () => S.status === 'saving' ? 'Salvataggio in corso…' : S.status === 'offline' ? 'Offline: salvo appena torna la rete' : 'Tutto salvato nell\'account';
-  function schedule() { clearTimeout(S.timer); setStatus('saving'); S.timer = setTimeout(push, 1000); }
+  function schedule() { clearTimeout(S.timer); setStatus('saving'); S.timer = setTimeout(push, 2500); }
   async function push() {
     clearTimeout(S.timer);
     if (!S.token || !S.doc) return;
     if (!S.dirty) return setStatus('ok');
     const sent = S.doc.localAt;
     try {
-      await api('PUT', '/data', { data: S.doc });
+      const r = await api('PUT', '/data', { data: S.doc });
+      if (r && r.savedAt) S.doc.savedAt = r.savedAt; // stessa versione del server: i controlli successivi non riscaricano tutto
       if (S.doc.localAt === sent) { S.dirty = false; saveLocal(); setStatus('ok'); } else schedule();
     } catch (e) {
       if (e.status === 401) return expired();
@@ -76,15 +77,20 @@
       if (e.t > since) { if (e.t > reset) { S.doc.done = S.doc.done || {}; if (!S.doc.done[e.u]) { S.doc.done[e.u] = true; ch = true; } } max = Math.max(max, e.t); }
     });
     Object.entries(wx.w || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.weights = S.doc.weights || {}; S.doc.weights[d] = v.kg; ch = true; max = Math.max(max, v.t); } });
-    Object.entries(wx.act || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.watchAct = S.doc.watchAct || {}; S.doc.watchAct[d] = { kcal: v.kcal, min: v.min, passi: v.passi, fcr: v.fcr }; ch = true; max = Math.max(max, v.t); } });
+    Object.entries(wx.act || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.watchAct = S.doc.watchAct || {}; const o = Object.assign({}, S.doc.watchAct[d] || {}); ['kcal', 'min', 'passi', 'fcr', 'sonno'].forEach(x => { if (v[x] != null) o[x] = v[x]; }); S.doc.watchAct[d] = o; ch = true; max = Math.max(max, v.t); } });
     if (max > since) { S.doc.wxAt = max; S.doc.localAt = Date.now(); S.dirty = true; saveLocal(); schedule(); }
     return ch;
   }
   const remote = () => remoteCbs.forEach(f => { try { f(); } catch (e) { /* niente */ } });
+  let refreshing = false, lastRefresh = 0;
   async function refresh() {
-    if (!S.token) return;
+    if (!S.token || refreshing || Date.now() - lastRefresh < 5000) return;
+    refreshing = true; lastRefresh = Date.now();
+    try { await refreshNow(); } finally { refreshing = false; }
+  }
+  async function refreshNow() {
     try {
-      const r = await api('GET', '/me');
+      const r = await api('GET', '/me' + (S.doc && S.doc.savedAt ? '?since=' + encodeURIComponent(S.doc.savedAt) : ''));
       if (S.dirty) { if (applyWx(r.wx)) remote(); return push(); }
       if (r.data && JSON.stringify(r.data) !== JSON.stringify(S.doc)) {
         S.doc = r.data; saveLocal(); applyWx(r.wx);
