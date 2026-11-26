@@ -981,7 +981,7 @@ window.FitAccount.whenReady(function () {
   const homeH = slot => HK.home.filter(f => homeSlot(f) === slot).sort((a, b) => homeRank(a) - homeRank(b)).map(f => { try { return f() || ''; } catch (e) { console.error('starfit+ home', e); return ''; } }).join('');
   // OGGI: solo la giornata
   function viewToday() {
-    const u = window.FitAccount.user() || '', name = u.charAt(0).toUpperCase() + u.slice(1), cw = currentWeek();
+    const u = window.FitAccount.user() || '', name = (typeof PROG.nome === 'string' && PROG.nome.trim() ? PROG.nome.trim().slice(0, 30) : u.charAt(0).toUpperCase() + u.slice(1)), cw = currentWeek();
     const t = sumFood(dayFood(dkey(new Date()))), mac = macrosFor(dkey(new Date()));
     const foodCard = `<a class="sec panel oggi-food" href="#cibo"><div><b>Pasti di oggi</b><span>${t.k ? n0(t.k) + ' kcal su ' + n0(mac.kcal[0]) + ' · proteine ' + n0(t.p) + ' / ' + n0(mac.p[0]) + ' g' : 'Ancora niente segnato · obiettivo ' + n0(mac.kcal[0]) + ' kcal'}</span></div><em>Apri →</em></a>`;
     return installHTML() + `${u === 'demo' ? '<p class="demo-note"><b>Account demo</b> · lo usano tutti e si azzera ogni notte: non inserire dati personali.</p>' : ''}<header class="oggi-h"><span class="oggi-logo">${window.FitLogo ? window.FitLogo() : ''}</span><p class="oggi-k">${esc(fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }))}${cw >= 1 && cw <= WEEKS ? ' · settimana ' + cw + ' di ' + WEEKS : ''}</p><h1 class="oggi-t">Ciao ${esc(name)}</h1></header>
