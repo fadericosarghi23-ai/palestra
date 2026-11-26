@@ -76,6 +76,8 @@ server.js               server per provarlo sul PC
 
 Ogni `git push` su `main` aggiorna il sito da solo.
 
+Prima di ogni push: `node tools/sw-version.mjs`. Aggiorna la versione dell'app in `public/sw.js`, calcolata dai file. I telefoni riscaricano l'app solo quando la versione cambia, così si risparmia traffico. Il controllo `node tools/sw-version.mjs --check` blocca il push se la versione è vecchia (va messo in `.git/hooks/pre-push`).
+
 ## Account
 
 Dal sito si può solo **accedere**: gli account si creano dal PC con `admin.mjs`.

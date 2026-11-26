@@ -21,4 +21,5 @@ export default async () => {
   return new Response(JSON.stringify({ ok: true, sent }), { headers: { 'Content-Type': 'application/json' } });
 };
 
-export const config = { schedule: '*/15 * * * *' };
+// Ora UTC: dalle 04:00 alle 22:59 = in Italia dalle 5/6 del mattino fino a mezzanotte circa (di notte non parte)
+export const config = { schedule: '*/15 4-22 * * *' };

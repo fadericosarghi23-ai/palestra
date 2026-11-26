@@ -760,7 +760,7 @@ window.FitAccount.whenReady(function () {
       : ps.ready === false ? '<p class="small wt-warn">Le notifiche non sono ancora attive sul server.</p>'
       : subHere ? '<p class="small wt-ok">Notifiche attive su questo telefono. Sull\'Apple Watch arrivano da sole quando l\'iPhone è bloccato.</p>'
       : '<p class="small">Tocca «Attiva» e consenti le notifiche. Sull\'Apple Watch arrivano da sole quando l\'iPhone è bloccato.</p>';
-    const prefRows = Object.keys(PUSH_LBL).filter(k => k !== 'vigilia' || PROG.id === 'terzino').map(k => { const p = prefs[k] || {}; return `<label class="wt-pref"><input type="checkbox" data-pref="${k}"${p.on !== false ? ' checked' : ''}><span><b>${PUSH_LBL[k][0]}</b><small>${PUSH_LBL[k][1]}</small></span><input type="time" data-pref-at="${k}" value="${esc(p.at || '')}" aria-label="Orario: ${PUSH_LBL[k][0]}"></label>`; }).join('');
+    const prefRows = Object.keys(PUSH_LBL).filter(k => k !== 'vigilia' || PROG.id === 'terzino').map(k => { const p = prefs[k] || {}; return `<label class="wt-pref"><input type="checkbox" data-pref="${k}"${p.on !== false ? ' checked' : ''}><span><b>${PUSH_LBL[k][0]}</b><small>${PUSH_LBL[k][1]}</small></span><input type="time" data-pref-at="${k}" min="06:30" max="23:00" step="900" value="${esc(p.at || '')}" aria-label="Orario: ${PUSH_LBL[k][0]}"></label>`; }).join('');
     const step = a => `<ol class="wt-steps">${a.map(x => `<li>${x}</li>`).join('')}</ol>`;
     const watchOn = 'Tocca <b>ⓘ</b> in basso e attiva <b>Mostra su Apple Watch</b>.';
     const newSc = 'Apri <b>Comandi</b> sull\'iPhone e tocca <b>+</b> per un nuovo comando.';
@@ -807,6 +807,7 @@ window.FitAccount.whenReady(function () {
       <section class="panel wt-sec"><h3>5 · Promemoria</h3>
         ${pushTop}${pushMsg ? `<p class="wt-msg">${esc(pushMsg)}</p>` : ''}
         <div class="wt-prefs">${prefRows}</div>
+        <p class="small">Orari tra le 6:30 e le 23:00: di notte i promemoria sono in pausa.</p>
         <div class="f-act">${pushOK() ? (subHere ? '<button type="button" class="sb-btn" id="push-test">Manda una prova</button><button type="button" class="btn-ghost" id="push-off">Disattiva su questo telefono</button>' : '<button type="button" class="sb-btn" id="push-on">Attiva le notifiche</button>') : ''}</div></section>
 
       ${runH('watch')}

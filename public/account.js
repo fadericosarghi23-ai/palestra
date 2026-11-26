@@ -104,8 +104,10 @@
   }
   window.addEventListener('online', push);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') push(); else refresh(); });
-  // Mentre l'app è aperta, ogni 45″ controlla se dall'orologio è arrivato qualcosa
-  setInterval(() => { if (document.visibilityState === 'visible' && navigator.onLine !== false && isReady) refresh(); }, 45000);
+  // Mentre l'app è aperta, ogni 2,5 minuti controlla se dall'orologio è arrivato qualcosa,
+  // solo nelle pagine dove serve (home, oggi, giorni). Riaprendo l'app il controllo è immediato.
+  const POLL_SKIP = /^#(cibo|piano|esercizi|mobilita|progressi|watch|profilo)/;
+  setInterval(() => { if (document.visibilityState === 'visible' && navigator.onLine !== false && isReady && !POLL_SKIP.test(location.hash)) refresh(); }, 150000);
 
   /* ---------- sessione ---------- */
   function ready() {
