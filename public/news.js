@@ -30,8 +30,8 @@
     ['✓', 'Ogni mattina', 'Come stai oggi?', 'Tre tocchi: sonno, energia e dolori. Se sei stanco o hai male, ti propongo la versione leggera della seduta.'],
     ['⇄', 'Corpo', 'Foto e misure', ter ? 'Ogni 4 settimane foto e misure (vita, petto…): vedi come cambi davvero. Le foto restano solo sul tuo iPhone.' : 'Ogni 4 settimane foto e misure (fianchi, cosce…): vedi come cambia il corpo, non solo il peso. Le foto restano solo sul tuo iPhone.'],
     ['↺', 'Cibo', 'Codice a barre e preferiti', 'Inquadri l\'etichetta e i valori arrivano da soli. Poi pasti preferiti, «Ripeti ieri», lista della spesa e acqua. Gli obiettivi cambiano con il tipo di giorno.'],
-    ['⌚', 'Apple Watch', 'Dal polso', 'Scheda di oggi, prossimo esercizio, recupero, peso, calendario e promemoria. Si attiva dal menu dell\'account (la lettera in alto) → Apple Watch.', '#watch', 'Apri la pagina Apple Watch →'],
-    ['★', 'Insieme', 'Sfida della settimana', 'Una sfida della costanza con gli altri di starfit+: punti per allenamenti, peso, cibo e acqua. Si vedono solo i punti. La trovi nella home.']
+    ['⌚', 'Apple Watch', 'Dal polso', 'Scheda di oggi, prossimo esercizio, recupero, peso, calendario e promemoria. La trovi nel menu (il logo al centro, in basso) → Apple Watch.', '#watch', 'Apri la pagina Apple Watch →'],
+    ['★', 'Insieme', 'Sfida della settimana', 'Una sfida della costanza con gli altri di starfit+: punti per allenamenti, peso, cibo e acqua. Si vedono solo i punti. La trovi nella pagina Io.']
   ];
   let i = 0, box = null, x0 = null;
   const seen = () => A.store.get('news-seen', '') === NEWS;

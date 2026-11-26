@@ -892,6 +892,54 @@ html body p, html body li { line-height: 1.55; }
 .more-in a[aria-current="page"] b { color: var(--fire-bright); }
 .more-in a:active { background: var(--iron-2); }
 @media (min-width: 761px) { .more-sheet { display: none; } }
+
+/* Nuova organizzazione */
+.bnav .bnav-logo { color: var(--on-iron); }
+.bnav .bnav-logo .ic { background: var(--iron); box-shadow: 0 6px 16px rgba(0, 0, 0, .45), 0 0 0 4px var(--iron); overflow: hidden; }
+.bnav .bnav-logo .ic img { width: 54px; height: 54px; display: block; }
+.bnav .bnav-logo[aria-expanded="true"] .ic { box-shadow: 0 0 0 2px var(--fire-bright), 0 0 0 5px var(--iron); }
+.oggi-h { margin: 6px 0 14px; }
+.oggi-k { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--ink-muted); text-transform: capitalize; }
+html body .oggi-t { margin: 2px 0 0; font: 700 30px/1.1 var(--display); letter-spacing: -0.02em; text-transform: none; }
+.oggi-food { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; color: var(--ink); }
+.oggi-food b { display: block; font-weight: 650; }
+.oggi-food span { font-size: 13px; color: var(--ink-muted); }
+.oggi-food em { font-style: normal; color: var(--fire); font-weight: 600; white-space: nowrap; }
+.edit-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+.more-top { display: flex; align-items: center; gap: 10px; padding: 8px 8px 10px; border-bottom: 1px solid var(--iron-2); margin-bottom: 4px; }
+.more-av { width: 36px; height: 36px; border-radius: 50%; background: var(--iron-3); color: var(--on-iron); display: grid; place-items: center; font-weight: 700; }
+.more-u { flex: 1; min-width: 0; }
+.more-u b { display: block; color: var(--on-iron); text-transform: capitalize; }
+.more-u small { display: block; font-size: 12px; color: var(--on-iron-muted); }
+.more-timer { min-height: 40px; padding-inline: 14px; }
+.more-g { margin: 10px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--on-iron-muted); }
+.more-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px; }
+.more-in .more-list a { display: block; padding: 9px 10px; border: 0; border-radius: 10px; background: var(--iron-2); }
+.more-in .more-list a + a { border-top: 0; }
+.more-in .more-list a b { display: block; font-size: 14px; }
+.more-in .more-list a span { display: block; font-size: 11px; line-height: 1.3; }
+.more-foot { display: flex; gap: 8px; justify-content: space-between; margin-top: 10px; padding: 0 4px 4px; }
+.more-foot .btn-ghost { color: var(--on-iron); border-color: var(--iron-3); min-height: 40px; }
+.more-in { max-height: calc(100vh - 110px - env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
+/* menu in basso: solo il pulsante centrale col logo (tutte le sezioni sono nel menu che apre) */
+@media (max-width: 760px) {
+  html body .bnav { grid-template-columns: 1fr; background: transparent; border-top: 0; pointer-events: none; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  html body .bnav > a { display: none; }
+  html body .bnav .bnav-logo { pointer-events: auto; justify-self: center; margin-bottom: 10px; }
+  html body .bnav .bnav-logo .ic { margin-top: 0; width: 60px; height: 60px; box-shadow: 0 8px 22px rgba(0, 0, 0, .45); }
+  html body .bnav .bnav-logo .ic img { width: 60px; height: 60px; }
+  html body .bnav .bnav-logo > span:last-child { display: none; }
+  html body .bnav .bnav-logo[aria-expanded="true"] .ic { box-shadow: 0 0 0 3px var(--fire-bright), 0 8px 22px rgba(0, 0, 0, .45); }
+  html body .more-sheet { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+/* sul telefono niente barra in alto: più spazio (account e menu sono nel logo in basso) */
+@media (max-width: 760px) {
+  html body .top { display: none; }
+  body { padding-top: env(safe-area-inset-top, 0px); }
+  main { padding-top: 14px; }
+  .hero .wrap { padding-top: 18px; }
+}
+.hero-ed label.wide { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -910,10 +958,10 @@ html body p, html body li { line-height: 1.55; }
 <footer><div class="wrap">Scheda personale per terzino · 1,85 m · 85 kg. Se senti dolore all'inguine o ai femorali che non passa, fermati e fatti vedere da un fisioterapista.</div></footer>
 <nav class="bnav" aria-label="Menu">
   <a href="#oggi" data-k="oggi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>Oggi</span></a>
-  <a href="#settimana" data-k="settimana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 14h.01M12 14h.01M16.5 14h.01M7.5 17.5h.01M12 17.5h.01" stroke-width="2.6"/></svg><span>Settimana</span></a>
-  <button type="button" class="bnav-timer" aria-label="Timer di recupero"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M18.5 6l1.5-1.5"/></svg></span><span>Recupero</span></button>
+  <a href="#settimana" data-k="settimana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Allenamento</span></a>
+  <button type="button" class="bnav-logo" aria-label="Menu di starfit+: tutte le sezioni" aria-haspopup="true" aria-expanded="false" aria-controls="more-sheet"><span class="ic"><img src="icon-192.png" alt="" width="54" height="54"></span><span>Menu</span></button>
   <a href="#cibo" data-k="cibo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2.5v6.5M4.5 2.5v4a2.5 2.5 0 0 0 5 0v-4M7 9v12.5"/><path d="M17.5 21.5V2.5c-2.2 1.2-3.5 4-3.5 7.5 0 2 .8 3 2 3.4h1.5"/></svg><span>Cibo</span></a>
-  <button type="button" class="bnav-more" data-k="altro" aria-haspopup="true" aria-expanded="false" aria-controls="more-sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Altro</span></button>
+  <a href="#io" data-k="io"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Io</span></a>
 </nav>
 <script src="anim.js"></script>
 <script src="data.js"></script>

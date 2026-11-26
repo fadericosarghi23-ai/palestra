@@ -881,7 +881,7 @@ window.FitAccount.whenReady(function () {
     return [
       { v: p.altezza || st[0][0], l: 'Altezza' },
       { v: lw ? kg(lw[1]) + ' kg' : (p.peso || st[1][0]), l: lw ? 'Ultimo peso' : 'Peso' },
-      { v: p.obiettivo || st[2][0], l: p.obLabel || st[2][1], hot: true },
+      { v: p.obiettivo || st[2][0], l: p.obiettivo ? 'Obiettivo' : st[2][1], hot: true },
       { v: fmt(END, { day: 'numeric', month: 'short', year: 'numeric' }), l: 'Traguardo' }
     ];
   }
@@ -899,9 +899,8 @@ window.FitAccount.whenReady(function () {
       <form class="panel dark hero-ed" id="hero-ed" autocomplete="off">
         <label>Altezza<input id="he-alt" value="${esc(p.altezza || st[0][0])}" placeholder="${esc(st[0][0])}" maxlength="12"></label>
         <label>Peso di oggi (kg)<input id="he-peso" inputmode="decimal" value="${lw ? esc(kg(lw[1])) : ''}" placeholder="${esc(st[1][0])}"></label>
-        <label>Nome del terzo dato<input id="he-obl" value="${esc(p.obLabel || st[2][1])}" placeholder="${esc(st[2][1])}" maxlength="20"></label>
-        <label>Valore<input id="he-ob" value="${esc(p.obiettivo || st[2][0])}" placeholder="${esc(st[2][0])}" maxlength="20"></label>
-        <p class="hero-ed-n">Il peso va anche nel diario del peso. Il traguardo (${fmt(END, { day: 'numeric', month: 'long', year: 'numeric' })}) segue il calendario delle 12 settimane.</p>
+        <label class="wide">Il tuo obiettivo<input id="he-ob" value="${esc(p.obiettivo || '')}" placeholder="${esc(PROG.id === 'terzino' ? 'Es. 80 kg' : 'Es. glutei più forti')}" maxlength="24"></label>
+        <p class="hero-ed-n">Li vedi in alto nella pagina Io. Il peso va anche nel diario del peso. Il traguardo (${fmt(END, { day: 'numeric', month: 'long', year: 'numeric' })}) segue il calendario delle 12 settimane.</p>
         <div class="hero-ed-a"><button type="submit" class="sb-btn">Salva</button><button type="button" class="btn-ghost" id="he-reset">Ripristina i dati della scheda</button></div>
         ${profMsg ? `<p class="hero-ed-ok">${esc(profMsg)}</p>` : ''}
       </form>`;
@@ -915,11 +914,11 @@ window.FitAccount.whenReady(function () {
     if (!e.target || e.target.id !== 'hero-ed') return false;
     e.preventDefault();
     const val = id => (document.getElementById(id).value || '').trim().slice(0, 20);
-    const p = { altezza: val('he-alt'), obiettivo: val('he-ob'), obLabel: val('he-obl') };
+    const p = { altezza: val('he-alt'), obiettivo: val('he-ob') };
     Object.keys(p).forEach(k => { if (!p[k]) delete p[k]; });
     store.set('profile', p);
     const w = parseKg(val('he-peso')); if (w != null) setWeight(dkey(new Date()), w);
-    profMsg = 'Salvato ✓ Lo vedi in alto nella home.'; buzz(); route(true);
+    profMsg = 'Salvato ✓ Lo vedi in alto nella pagina Io.'; buzz(); route(true);
     return true;
   }
 
@@ -956,6 +955,26 @@ window.FitAccount.whenReady(function () {
   const homeSlot = f => { if (f.slot) return f.slot; const t = String(f); return /readyHTML/.test(t) ? 'top' : /waterHTML/.test(t) ? 'duo' : /homeBlockHTML/.test(t) ? 'mid' : 'more'; };
   const homeRank = f => { if (f.rank != null) return f.rank; const t = String(f); return /weekHTML/.test(t) ? 0 : /sfHTML/.test(t) ? 1 : 2; };
   const homeH = slot => HK.home.filter(f => homeSlot(f) === slot).sort((a, b) => homeRank(a) - homeRank(b)).map(f => { try { return f() || ''; } catch (e) { console.error('starfit+ home', e); return ''; } }).join('');
+  // OGGI: solo la giornata
+  function viewToday() {
+    const u = window.FitAccount.user() || '', name = u.charAt(0).toUpperCase() + u.slice(1), cw = currentWeek();
+    const t = sumFood(dayFood(dkey(new Date()))), mac = macrosFor(dkey(new Date()));
+    const foodCard = `<a class="sec panel oggi-food" href="#cibo"><div><b>Cibo di oggi</b><span>${t.k ? n0(t.k) + ' kcal su ' + n0(mac.kcal[0]) + ' · proteine ' + n0(t.p) + ' / ' + n0(mac.p[0]) + ' g' : 'Ancora niente segnato · obiettivo ' + n0(mac.kcal[0]) + ' kcal'}</span></div><em>Apri →</em></a>`;
+    return installHTML() + `<header class="oggi-h"><p class="oggi-k">${esc(fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }))}${cw >= 1 && cw <= WEEKS ? ' · settimana ' + cw + ' di ' + WEEKS : ''}</p><h1 class="oggi-t">Ciao ${esc(name)}</h1></header>
+      <section class="sec">${todayHTML()}</section>${homeH('top')}<div class="sec home-duo">${weightHTML('home')}${homeH('duo')}</div>${foodCard}${homeH('mid')}`;
+  }
+  // IO: i tuoi progressi e le impostazioni
+  function viewIo() {
+    const more = homeH('more');
+    const row = (href, t, d) => `<a class="mob-link" href="${href}"><div><b>${t}</b><br><span>${d}</span></div><em>Apri →</em></a>`;
+    return `<div class="dayhead"><div><div class="meta"><span class="chip act">Io</span></div><p class="big">I tuoi progressi</p><p class="sub">Costanza, riepilogo, sfida e impostazioni</p></div></div>
+      ${more}
+      <h2 class="home-h">La tua scheda</h2>
+      ${row('#piano', 'Piano e dieta', 'Diario del peso, test, calorie e regole')}
+      <h2 class="home-h">Impostazioni</h2>
+      ${row('#profilo', 'Profilo', 'Altezza, peso e obiettivo in alto')}${row('#watch', 'Apple Watch e promemoria', 'Scheda sul polso, calendario, notifiche')}`;
+  }
+  // ALLENAMENTO: la settimana, il calendario, gli esercizi
   function viewHome() {
     const todayId = TODAY_ID();
     const tiles = days().map(d => {
@@ -968,15 +987,12 @@ window.FitAccount.whenReady(function () {
         ${pr.tot ? `<span class="prog"><i style="width:${Math.round(pr.n / pr.tot * 100)}%"></i></span><span class="prog-l">${pr.n}/${pr.tot} fatti</span>` : '<span class="prog-l">Mobilità 10′</span>'}
       </a>`;
     }).join('');
-    const more = homeH('more');
-    return installHTML() + `<section class="sec">${todayHTML()}</section>${homeH('top')}<div class="sec home-duo">${weightHTML('home')}${homeH('duo')}</div>${homeH('mid')}${more ? `<section class="sec home-more"><h2 class="home-h">La tua settimana</h2>${more}</section>` : ''}` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
+    return `<div class="dayhead"><div><div class="meta"><span class="chip gym">Allenamento</span></div><p class="big">La settimana</p><p class="sub">${esc(PROG.name)}</p></div></div>` + `<section class="sec"><div class="sec-h"><h2>Giorni</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
       ${matchPickHTML()}<div class="week">${tiles}</div></section>
       <section class="sec quick">
+        <a href="#esercizi"><b>Tutti gli esercizi</b><span>${n0(Object.keys(EX).length)} con video</span></a>
         <a href="#mobilita"><b>Mobilità</b><span>10′ ogni giorno</span></a>
-        <a href="#cibo"><b>Cibo e macro</b><span>${(() => { const t = sumFood(dayFood(dkey(new Date()))); return t.k ? 'Oggi ' + n0(t.k) + ' kcal · ' + n0(t.p) + ' g proteine' : 'Segna cosa mangi oggi'; })()}</span></a>
-        <a href="#esercizi"><b>Tutti gli esercizi</b><span>${Object.keys(EX).length} con video</span></a>
-        <a href="#piano"><b>Piano e dieta</b><span>Test, calorie, regole</span></a>
-      </section>
+      </section>` + calendarHTML() + `
       <section class="sec"><div class="pillars">${PROG.pillars.map(p => `<div class="pillar"><h3>${esc(p[0])} <span>${esc(p[1])}</span></h3><p>${esc(p[2])}</p></div>`).join('')}</div></section>
       <p class="note">${PROG.note}</p>`;
   }
@@ -1002,7 +1018,8 @@ window.FitAccount.whenReady(function () {
     if (d.type !== 'act') html += `<a class="mob-link" href="#mobilita"><div><b>Mobilità quotidiana · 10′</b><br><span>${MOB.length} esercizi di mobilità, anche a casa</span></div><em>Apri →</em></a>`;
     html += runH('dayTop', d);
     if (d.id === TODAY_ID()) html += weightHTML(true);
-    html += `<div class="edit-bar"><button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
+    const hasSets = (d.items || []).some(it => it.ex && (parseRest(it.r) || parseSets(it.s)));
+    html += `<div class="edit-bar">${hasSets ? '<button type="button" class="ed-open timer-open">⏱ Recupero</button>' : ''}<button type="button" class="ed-open" id="ed-open">✎ Modifica esercizi</button>${d.custom ? '<span class="ed-flag">Scheda personalizzata</span>' : ''}</div>`;
     const tips = PROG.tips && PROG.tips[d.type];
     if (tips) {
       html += `<div class="tips">${tips.map(t => `<div class="tip"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>`).join('')}</div>`;
@@ -1211,14 +1228,14 @@ window.FitAccount.whenReady(function () {
   }
 
   /* ---------- router ---------- */
-  const TABS = [['settimana', 'Settimana'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['mobilita', 'Mobilità'], ['cibo', 'Cibo'], ['esercizi', 'Esercizi'], ['piano', 'Piano']]);
+  const TABS = [['oggi', 'Oggi'], ['settimana', 'Allenamento'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['esercizi', 'Esercizi'], ['mobilita', 'Mobilità'], ['cibo', 'Cibo'], ['io', 'Io']]);
   function renderTabs(cur) {
     const tabs = document.getElementById('tabs');
     tabs.innerHTML = TABS.map(t => t === 'sep' ? '<span class="sep"></span>' : `<a href="#${t[0]}"${t[0] === cur ? ' aria-current="page"' : ''}>${t[1]}</a>`).join('');
     const a = tabs.querySelector('a[aria-current]');
     if (a) tabs.scrollLeft = a.offsetLeft - tabs.clientWidth / 2 + a.clientWidth / 2;
     const isDay = BASE_DAYS.some(d => d.id === cur);
-    const bkey = cur === TODAY_ID() ? 'oggi' : isDay ? 'settimana' : MORE_IDS.has(cur) || HK.views[cur] ? 'altro' : cur;
+    const bkey = cur === 'oggi' ? 'oggi' : isDay || TRAIN_IDS.has(cur) ? 'settimana' : IO_IDS.has(cur) || HK.views[cur] ? 'io' : cur;
     document.querySelectorAll('.bnav a, .bnav [data-k]').forEach(x => { if (x.dataset.k === bkey) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
   }
   function centerCalendar() {
@@ -1229,18 +1246,18 @@ window.FitAccount.whenReady(function () {
     syncWatch();
     // testo in fondo: con altezza e peso del profilo
     { const f = document.querySelector('footer .wrap'), hs = heroStats(); if (f) f.textContent = PROG.footer.replace(PROG.stats[0][0], hs[0].v).replace(PROG.stats[1][0], hs[1].v); }
-    let id = (location.hash || '').replace('#', '') || 'settimana';
-    if (id === 'oggi') id = TODAY_ID();
+    let id = (location.hash || '').replace('#', '') || 'oggi';
     const day = dayById(id);
-    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch', 'profilo'].includes(id) && !HK.views[id]) id = 'settimana';
+    if (!day && !['oggi', 'io', 'settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch', 'profilo'].includes(id) && !HK.views[id]) id = 'oggi';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
     unmount(main); unmount(hero);
-    hero.innerHTML = id === 'settimana' ? heroHTML() : '';
-    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : id === 'profilo' ? viewProfile() : HK.views[id] ? HK.views[id]() : viewHome();
+    hero.innerHTML = id === 'io' ? heroHTML() : '';
+    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : id === 'profilo' ? viewProfile() : id === 'oggi' ? viewToday() : id === 'io' ? viewIo() : HK.views[id] ? HK.views[id]() : viewHome();
     mountFigures(hero); mountFigures(main);
     if (id === 'esercizi') applyLib();
     if (id === 'settimana') centerCalendar();
+    document.body.dataset.page = id;
     const ds = main.querySelector('.daystrip a[aria-current]');
     if (ds) { const strip = ds.parentElement; strip.scrollLeft = ds.offsetLeft - strip.clientWidth / 2 + ds.clientWidth / 2; }
     if (!keep) window.scrollTo(0, 0);
@@ -1248,21 +1265,36 @@ window.FitAccount.whenReady(function () {
   }
 
   /* ---------- menu «Altro» (telefono): tutte le sezioni a due tocchi ---------- */
-  const MORE_IDS = new Set(['piano', 'esercizi', 'mobilita', 'costanza', 'progressi', 'watch', 'profilo']);
-  function moreItems() {
-    return [['piano', 'Piano e dieta', 'Progressione, test, calorie, regole'], ['esercizi', 'Tutti gli esercizi', n0(Object.keys(EX).length) + ' con video e spiegazione'],
-      ['mobilita', 'Mobilità', '10′ ogni giorno'], ['costanza', 'Costanza', 'Il calendario dei tuoi allenamenti'], ['progressi', 'Foto e misure', 'Ogni 4 settimane'],
-      ['watch', 'Apple Watch e promemoria', 'Scheda sul polso, calendario, notifiche'], ['profilo', 'Profilo', 'Altezza, peso, obiettivo']];
+  // A quale voce del menu in basso appartiene ogni pagina
+  const IO_IDS = new Set(['io', 'piano', 'costanza', 'progressi', 'watch', 'profilo']), TRAIN_IDS = new Set(['settimana', 'esercizi', 'mobilita']);
+  const MORE_IDS = new Set([...IO_IDS, ...TRAIN_IDS]);
+  function moreGroups() {
+    return [
+      ['Ogni giorno', [['oggi', 'Oggi', 'La tua giornata'], ['cibo', 'Cibo', 'Cosa mangi e i macro']]],
+      ['Allenamento', [['settimana', 'La settimana', 'Giorni e calendario'], ['esercizi', 'Tutti gli esercizi', n0(Object.keys(EX).length) + ' con video'], ['mobilita', 'Mobilità', '10′ ogni giorno']]],
+      ['I tuoi progressi', [['io', 'Io', 'Riepilogo, costanza, sfida'], ['costanza', 'Costanza', 'Un pallino per ogni giorno'], ['progressi', 'Foto e misure', 'Ogni 4 settimane'], ['piano', 'Piano e dieta', 'Peso, test, calorie, regole']]],
+      ['Impostazioni', [['watch', 'Apple Watch e promemoria', 'Scheda sul polso, notifiche'], ['profilo', 'Profilo', 'Altezza, peso, obiettivo']]]
+    ];
   }
   function toggleMore(open) {
-    let sh = document.getElementById('more-sheet'); const btn = document.querySelector('.bnav-more');
+    let sh = document.getElementById('more-sheet'); const btn = document.querySelector('.bnav-logo');
     if (open === undefined) open = !sh;
     if (!open) { if (sh) sh.remove(); if (btn) btn.setAttribute('aria-expanded', 'false'); return; }
     if (sh) return;
     const cur = (location.hash || '#').slice(1);
     sh = document.createElement('div'); sh.id = 'more-sheet'; sh.className = 'more-sheet';
-    sh.innerHTML = `<div class="more-in" role="menu" aria-label="Altre sezioni">${moreItems().map(([id, t, d]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}><b>${esc(t)}</b><span>${esc(d)}</span><em>→</em></a>`).join('')}</div>`;
-    sh.addEventListener('click', e => { if (e.target === sh || e.target.closest('a')) toggleMore(false); });
+    const u = window.FitAccount.user() || '', st = document.getElementById('acct-status');
+    sh.innerHTML = `<div class="more-in" role="menu" aria-label="Tutte le sezioni">
+      <div class="more-top"><span class="more-av">${esc(u.charAt(0).toUpperCase())}</span><span class="more-u"><b>${esc(u)}</b><small>${esc(st ? st.textContent : '')}</small></span>
+        <button type="button" class="sb-btn more-timer" data-more="timer">⏱ Recupero</button></div>
+      ${moreGroups().map(([g, items]) => `<p class="more-g">${esc(g)}</p><div class="more-list">${items.map(([id, t, d]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}><b>${esc(t)}</b><span>${esc(d)}</span></a>`).join('')}</div>`).join('')}
+      <div class="more-foot"><button type="button" class="btn-ghost" data-more="slow">${speed < 1 ? 'Animazioni normali' : 'Rallenta le animazioni'}</button><button type="button" class="btn-ghost" data-more="out">Esci</button></div>
+    </div>`;
+    sh.addEventListener('click', e => {
+      const b = e.target.closest('[data-more]');
+      if (b) { const a = b.dataset.more; toggleMore(false); if (a === 'timer') window.FitTimer.picker(); if (a === 'slow') { const sl = document.getElementById('slow'); if (sl) sl.click(); } if (a === 'out') { const o = document.getElementById('acct-out'); if (o) o.click(); } return; }
+      if (e.target === sh || e.target.closest('a')) toggleMore(false);
+    });
     document.body.appendChild(sh); if (btn) btn.setAttribute('aria-expanded', 'true');
   }
 
@@ -1295,7 +1327,7 @@ window.FitAccount.whenReady(function () {
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
-    if (e.target.closest('.bnav-more')) { buzz(); toggleMore(); return; }
+    if (e.target.closest('.bnav-logo')) { buzz(); toggleMore(); return; }
     if (someH('click', e)) return;
     if (onHeroClick(e)) return;
     if (onEditClick(e)) return;
@@ -1325,7 +1357,7 @@ window.FitAccount.whenReady(function () {
     }
     const sbb = e.target.closest('.setbar button');
     if (sbb) onSetBar(sbb);
-    if (e.target.closest('#sw-open, .bnav-timer')) { buzz(); window.FitTimer.picker(); }
+    if (e.target.closest('#sw-open, .bnav-timer, .timer-open')) { buzz(); window.FitTimer.picker(); }
     const sw = e.target.closest('.media-sw button');
     if (sw) {
       const box = sw.closest('.anim'), mode = sw.dataset.mode;

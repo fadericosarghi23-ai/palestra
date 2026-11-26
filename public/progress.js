@@ -46,6 +46,21 @@ html.pg-lock .timer { z-index: 1001; bottom: 0; padding-bottom: env(safe-area-in
 body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px)); }
 .pg-in-ov { max-width: 560px; margin: 0 auto; display: grid; gap: 12px; }
 .pg-blk { margin: 0; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; color: var(--fire-bright); }
+.pg-mw { margin: 12px 0 10px; }
+.pg-tips { margin-top: 18px; border-top: 1px solid var(--iron-3); padding-top: 6px; }
+.pg-how { border-bottom: 1px solid var(--iron-3); }
+.pg-how summary { list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 12px 0; font-weight: 600; font-size: 15px; color: var(--on-iron); cursor: pointer; }
+.pg-how summary::-webkit-details-marker { display: none; }
+.pg-how summary span { font-size: 12px; font-weight: 500; color: var(--on-iron-muted); }
+.pg-how ol, .pg-how ul { margin: 0 0 12px; padding-left: 20px; color: var(--on-iron); font-size: 15px; line-height: 1.5; }
+.pg-how li { margin: 6px 0; }
+.pg-how ul li::marker { color: var(--fire-bright); }
+.pg-mus { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 8px; }
+.pg-mus span { font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--iron-2); color: var(--on-iron); }
+.pg-mus .pg-meta { background: transparent; color: var(--on-iron-muted); padding-left: 0; }
+.pg-yt { display: inline-block; margin: 4px 0 18px; color: var(--fire-bright); font-weight: 600; text-decoration: none; font-size: 14px; }
+.pg-mw .anim { border-radius: 14px; overflow: hidden; background: var(--iron-2); }
+.pg-mw .fig-wrap svg { max-height: 34vh; }
 .pg-name { margin: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 40px; line-height: 1; text-wrap: balance; overflow-wrap: anywhere; }
 .pg-dose { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .pg-dose b { font-family: var(--display); font-weight: 800; font-size: 44px; line-height: 1; color: var(--fire-bright); font-variant-numeric: tabular-nums; }
@@ -339,7 +354,7 @@ body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bot
     if (!OV) return;
     clearTimeout(advT);
     OV = null; unlock();
-    if (ovEl) ovEl.remove(); ovEl = null;
+    if (ovEl) { if (A.unmount) A.unmount(ovEl); ovEl.remove(); } ovEl = null;
     document.documentElement.classList.remove('pg-lock');
     if (opts && opts.noRoute) return;
     A.route(true);
@@ -372,8 +387,37 @@ body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bot
       <div class="pg-bar" aria-hidden="true"><i style="width:${Math.round(Math.min(i, N) / N * 100)}%"></i></div>`;
     const prevScroll = ovEl.querySelector('.pg-scroll');
     const keepY = !top && prevScroll ? prevScroll.scrollTop : 0;
+    const oldMw = ovEl.querySelector('.pg-mw'), keepMw = oldMw && +oldMw.dataset.i === i ? oldMw : null;
+    if (keepMw) keepMw.remove(); else if (A.unmount) A.unmount(ovEl);
     ovEl.innerHTML = head + `<div class="pg-scroll"><div class="pg-in-ov">${i >= N ? finishHTML() : exHTML(OV.items[i])}</div></div>`;
+    const ph = ovEl.querySelector('.pg-mw');
+    if (ph && keepMw) ph.replaceWith(keepMw); else if (ph && A.mountFigures) A.mountFigures(ph);
     const sc = ovEl.querySelector('.pg-scroll'); if (sc) sc.scrollTop = keepY;
+  }
+  function mediaHTML(id) {
+    const e = EX[id], v = (window.FitVideos || {})[id], AN = A.ANIM || {};
+    const ak = AN[id] ? id : (e.anim && AN[e.anim] ? e.anim : null);
+    const yt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(e.yt || e.name);
+    if (!v && !ak) return `<a class="vid-none" href="${yt}" target="_blank" rel="noopener"><span class="vid-btn"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="currentColor"/></svg></span><b>Guarda come si fa</b><span>Video su YouTube ↗</span></a>`;
+    const mode = v && (!ak || store.get('media', 'video') === 'video') ? 'video' : 'anim';
+    const sw = v && ak ? `<div class="media-sw" role="group" aria-label="Cosa mostrare"><button type="button" data-mode="video" aria-pressed="${mode === 'video'}">Video</button><button type="button" data-mode="anim" aria-pressed="${mode === 'anim'}">Animazione</button></div>` : '';
+    const vid = v ? `<div class="vid" data-vid="${v.id}" data-title="${esc(e.name)}"${mode === 'video' ? '' : ' hidden'}><button type="button" class="vid-play" aria-label="Riproduci il video: ${esc(e.name)}">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" loading="lazy"><span class="vid-btn"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="currentColor"/></svg></span>
+        <span class="vid-cap">Video di ${esc(v.ch)}${v.it ? ' · in italiano' : ''}</span></button></div>` : '';
+    const fig = ak ? `<div class="fig-wrap"${mode === 'video' ? ' hidden' : ''}><svg data-anim="${ak}" aria-label="Animazione: ${esc(e.name)}"></svg><button class="pp" type="button"></button></div>` : '';
+    return `<div class="anim">${sw}${vid}${fig}</div>`;
+  }
+  // Gli stessi consigli della scheda normale: come si fa, errori, muscoli, video su YouTube
+  function tipsHTML(id) {
+    const e = EX[id]; if (!e) return '';
+    const v = (window.FitVideos || {})[id];
+    const yt = v ? 'https://www.youtube.com/watch?v=' + v.id : 'https://www.youtube.com/results?search_query=' + encodeURIComponent(e.yt || e.name);
+    const meta = [e.cat, e.eq].filter(Boolean).join(' · ');
+    return `<div class="pg-tips">
+      <details class="pg-how" open><summary>Come si fa <span>${(e.steps || []).length} passi</span></summary><ol>${(e.steps || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol></details>
+      <details class="pg-how" open><summary>Errori da evitare <span>${(e.err || []).length}</span></summary><ul>${(e.err || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>
+      <div class="pg-mus">${meta ? `<span class="pg-meta">${esc(meta)}</span>` : ''}${(e.mus || []).map(m => `<span>${esc(m)}</span>`).join('')}</div>
+      <a class="pg-yt" href="${yt}" target="_blank" rel="noopener">Apri su YouTube ↗</a></div>`;
   }
   function exHTML(it) {
     const e = EX[it.ex], uid = it.uid, sets = A.parseSets(it.s), n = Math.min(setsOf(uid), sets);
@@ -389,13 +433,15 @@ body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bot
     const restTxt = it.r ? (it.r === '—' ? 'Nessun recupero' : `Recupero <strong>${esc(it.r)}</strong>`) : '';
     return `${blk ? `<p class="pg-blk">${esc(blk)}</p>` : ''}
       <h2 class="pg-name">${esc(e.name)}</h2>
+      <div class="pg-mw" data-i="${OV.i}">${mediaHTML(it.ex)}</div>
       <p class="pg-dose"><b>${esc(it.s || '')}</b>${it.per ? `<span>${esc(it.per)}</span>` : ''}${restTxt ? `<span>${restTxt}</span>` : ''}</p>
       ${it.note ? `<p class="pg-note">${esc(it.note)}</p>` : ''}
       ${isDone ? '<p class="pg-done-tag">Fatto ✓</p>' : ''}
       ${dots}
       ${rowHTML(it.ex, it, uid, true)}
       ${btns}
-      <div class="pg-sub">${undo}<p class="pg-next">${nx ? `Dopo: <b>${esc(EX[nx.ex].name)}</b>` : 'Ultimo esercizio'}</p></div>`;
+      <div class="pg-sub">${undo}<p class="pg-next">${nx ? `Dopo: <b>${esc(EX[nx.ex].name)}</b>` : 'Ultimo esercizio'}</p></div>
+      ${tipsHTML(it.ex)}`;
   }
   function finishHTML() {
     const t = todayK(), seen = new Set(), recs = [];
@@ -476,7 +522,9 @@ body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bot
     if (st) { openOv(st.dataset.pgStart); return true; }
     const ob = t.closest('[data-pgo]');
     if (ob && OV && ovEl && ovEl.contains(ob)) { onOv(ob.dataset.pgo); return true; }
-    if (ovEl && ovEl.contains(t)) return true; // clic dentro l'allenamento: non riguarda la pagina
+    // video, Video/Animazione e pausa dell'animazione li gestisce app.js anche dentro l'allenamento
+    if (ovEl && ovEl.contains(t) && t.closest('.vid-play, .media-sw button, .pp')) return false;
+    if (ovEl && ovEl.contains(t)) return true; // altri clic dentro l'allenamento: non riguardano la pagina
     // "↺" nella scheda: togli anche l'ultima serie registrata oggi
     const un = t.closest('.setbar [data-act="undo"]');
     if (un) {
