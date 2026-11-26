@@ -1266,6 +1266,7 @@ window.FitAccount.whenReady(function () {
     if (ds) { const strip = ds.parentElement; strip.scrollLeft = ds.offsetLeft - strip.clientWidth / 2 + ds.clientWidth / 2; }
     if (!keep) window.scrollTo(0, 0);
     HK.after.forEach(f => { try { f(id, main, day); } catch (e) { console.error('starfit+ modulo after', e); } });
+    setTimeout(menuHint, 1500);
   }
 
   /* ---------- menu «Altro» (telefono): tutte le sezioni a due tocchi ---------- */
@@ -1280,7 +1281,13 @@ window.FitAccount.whenReady(function () {
       ['Impostazioni', [['watch', 'Apple Watch e promemoria', 'Scheda sul polso, notifiche'], ['profilo', 'Profilo', 'Altezza, peso, obiettivo']]]
     ];
   }
+  function menuHint() {
+    if (store.get('menu-hint', false) || document.querySelector('.menu-hint, .nw') || !isPhone()) return;
+    const t = document.createElement('div'); t.className = 'menu-hint'; t.textContent = 'Tocca qui per tutte le sezioni'; t.setAttribute('role', 'status');
+    document.body.appendChild(t);
+  }
   function toggleMore(open) {
+    const hint = document.querySelector('.menu-hint'); if (hint && open !== false) { hint.remove(); store.set('menu-hint', true); }
     let sh = document.getElementById('more-sheet'); const btn = document.querySelector('.bnav-logo');
     if (open === undefined) open = !sh;
     if (!open) { if (sh) sh.remove(); if (btn) btn.setAttribute('aria-expanded', 'false'); return; }
