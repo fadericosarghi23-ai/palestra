@@ -898,7 +898,7 @@ window.FitAccount.whenReady(function () {
     const p = store.get('profile', {}) || {}, st = PROG.stats, lw = lastWeight();
     return `<div class="dayhead"><div><div class="meta"><span class="chip act">Account</span></div>
         <p class="big">Profilo</p><p class="sub">${esc(window.FitAccount.user() || '')} · ${esc(PROG.name)}</p>
-        <p class="goal">Questi dati compaiono in alto nella home. Cambiali quando vuoi.</p></div></div>
+        <p class="goal">${window.FitAccount.user() === 'demo' ? 'Account demo: puoi provare a cambiarli, ogni notte tornano quelli di esempio.' : 'Questi dati compaiono in alto nella pagina Io. Cambiali quando vuoi.'}</p></div></div>
       <form class="panel dark hero-ed" id="hero-ed" autocomplete="off">
         <label>Altezza<input id="he-alt" value="${esc(p.altezza || st[0][0])}" placeholder="${esc(st[0][0])}" maxlength="12"></label>
         <label>Peso di oggi (kg)<input id="he-peso" inputmode="decimal" value="${lw ? esc(kg(lw[1])) : ''}" placeholder="${esc(st[1][0])}"></label>
@@ -967,7 +967,7 @@ window.FitAccount.whenReady(function () {
     const u = window.FitAccount.user() || '', name = u.charAt(0).toUpperCase() + u.slice(1), cw = currentWeek();
     const t = sumFood(dayFood(dkey(new Date()))), mac = macrosFor(dkey(new Date()));
     const foodCard = `<a class="sec panel oggi-food" href="#cibo"><div><b>Pasti di oggi</b><span>${t.k ? n0(t.k) + ' kcal su ' + n0(mac.kcal[0]) + ' · proteine ' + n0(t.p) + ' / ' + n0(mac.p[0]) + ' g' : 'Ancora niente segnato · obiettivo ' + n0(mac.kcal[0]) + ' kcal'}</span></div><em>Apri →</em></a>`;
-    return installHTML() + `<header class="oggi-h"><span class="oggi-logo">${window.FitLogo ? window.FitLogo() : ''}</span><p class="oggi-k">${esc(fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }))}${cw >= 1 && cw <= WEEKS ? ' · settimana ' + cw + ' di ' + WEEKS : ''}</p><h1 class="oggi-t">Ciao ${esc(name)}</h1></header>
+    return installHTML() + `${u === 'demo' ? '<p class="demo-note"><b>Account demo</b> · lo usano tutti e si azzera ogni notte: non inserire dati personali.</p>' : ''}<header class="oggi-h"><span class="oggi-logo">${window.FitLogo ? window.FitLogo() : ''}</span><p class="oggi-k">${esc(fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }))}${cw >= 1 && cw <= WEEKS ? ' · settimana ' + cw + ' di ' + WEEKS : ''}</p><h1 class="oggi-t">Ciao ${esc(name)}</h1></header>
       <section class="sec">${todayHTML()}</section>${homeH('top')}<div class="sec home-duo">${weightHTML('home')}${homeH('duo')}</div>${foodCard}${homeH('mid')}`;
   }
   // IO: i tuoi progressi e le impostazioni

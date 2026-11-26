@@ -111,6 +111,15 @@ node admin.mjs elimina elisa --sito https://starfitplus.netlify.app
 
 La password viene chiesta nel terminale e non si vede mentre la scrivi. Senza `--programma` l'account parte con il programma `terzino`. Il comando `programma` cambia scheda a un account esistente (serve la sua password) e azzera serie e modifiche della scheda vecchia. Senza `--sito` i comandi lavorano sul server locale.
 
+## Account demo
+
+Un account condiviso per far provare l'app: `node admin.mjs demo --programma terzino --sito https://starfitplus.netlify.app`.
+
+- Se manca lo crea (la password la scegli tu e la dai a chi prova).
+- Carica i dati di esempio (`demo/seed.js`) come modello: ogni giorno, al primo accesso, l'account riparte da lì con le date spostate a oggi.
+- Nell'app compare l'avviso «Account demo: lo usano tutti e si azzera ogni notte».
+- Non può creare il codice dell'Apple Watch, attivare le notifiche né entrare nella sfida con gli account veri.
+
 ## Provarlo sul PC
 
 ```

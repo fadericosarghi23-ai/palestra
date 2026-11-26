@@ -7,6 +7,7 @@
    node admin.mjs password <nome>                cambia la password (chiude le sessioni aperte)
    node admin.mjs elimina <nome>                 elimina l'account e i suoi dati
    node admin.mjs programmi                      mostra i programmi disponibili
+   node admin.mjs demo --programma <id>          account demo condiviso con dati di esempio (si azzera ogni giorno)
 
    Di base lavora sul server locale (http://localhost:8080).
    Per il sito online aggiungi:  --sito https://tuosito.netlify.app
@@ -93,6 +94,23 @@ if (cmd === 'elenco') {
   const { users } = await call('users');
   if (!users.length) say('Nessun account.');
   users.forEach(u => say('  • ' + u.name + '   (creato il ' + new Date(u.created).toLocaleDateString('it-IT') + ')'));
+} else if (cmd === 'demo') {
+  // Account demo condiviso: crea l'account (se manca) e carica i dati di esempio come modello.
+  // Ogni giorno il sito riparte da questo modello, con le date spostate a oggi.
+  const progId = (progFlag || 'terzino').trim().toLowerCase(); checkProgram(progId);
+  const win = {};
+  new Function('window', fs.readFileSync(path.join(here, 'public', 'data.js'), 'utf8'))(win);
+  new Function('window', fs.readFileSync(path.join(here, 'demo', 'seed.js'), 'utf8'))(win);
+  const t = new Date(), day = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  const doc = win.FitDemoSeed(win.FitData, progId, t);
+  const { users } = await call('users');
+  if (!users.some(u => u.name === 'demo')) {
+    say("L'account \"demo\" non esiste: lo creo. Scegli la password da dare a chi prova l'app.");
+    const pass = await newPassword();
+    await call('create', { user: 'demo', pass });
+  }
+  await call('demo', { doc, day });
+  say('✔ Account demo pronto con la scheda "' + progId + '": ogni giorno riparte dai dati di esempio.');
 } else if (cmd === 'programmi') {
   const P = programs();
   Object.values(P).forEach(p => say('  • ' + p.id + '   ' + p.name));
