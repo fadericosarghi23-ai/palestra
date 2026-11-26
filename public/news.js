@@ -24,7 +24,10 @@
 
   const ter = A.PROG.id === 'terzino';
   const slides = [
-    ['+', 'Novità', 'starfit+ è cresciuto', 'Ecco cosa c\'è di nuovo: ci vuole un minuto. Puoi saltare quando vuoi.'],
+    // account nuovo (niente allenamenti né pesate): benvenuto invece di «novità»
+    Object.keys(A.store.get('trained', {}) || {}).length || Object.keys(A.store.get('weights', {}) || {}).length
+      ? ['+', 'Novità', 'starfit+ è cresciuto', 'Ecco cosa c\'è di nuovo: ci vuole un minuto. Puoi saltare quando vuoi.']
+      : ['+', 'Benvenuto', 'Ciao, questo è starfit+', 'Ti mostro in un minuto come funziona. Puoi saltare quando vuoi.'],
     ['▶', 'Allenamento', 'Modalità allenamento', 'Nei giorni di palestra tocca «Inizia l\'allenamento»: un esercizio alla volta a tutto schermo, recupero che parte da solo e schermo sempre acceso.'],
     ['kg', 'Progressi', 'Carichi e record', 'A ogni serie scrivi kg e ripetizioni: la volta dopo ti dico che carico usare. I record e il grafico dei progressi compaiono da soli.'],
     ['✓', 'Ogni mattina', 'Come stai oggi?', 'Tre tocchi: sonno, energia e dolori. Se sei stanco o hai male, ti propongo la versione leggera della seduta.'],

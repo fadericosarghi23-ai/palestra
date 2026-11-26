@@ -111,6 +111,29 @@ node admin.mjs elimina elisa --sito https://starfitplus.netlify.app
 
 La password viene chiesta nel terminale e non si vede mentre la scrivi. Senza `--programma` l'account parte con il programma `terzino`. Il comando `programma` cambia scheda a un account esistente (serve la sua password) e azzera serie e modifiche della scheda vecchia. Senza `--sito` i comandi lavorano sul server locale.
 
+### Pannello degli account (solo sul PC)
+
+```
+node pannello.mjs                       account del sito online
+node pannello.mjs --sito http://localhost:8080   account del server locale
+```
+
+Apre http://localhost:8099 con tutti gli account: stato (pagato, tester, demo, da pagare, sospeso), importo, data del pagamento, note, scheda, ultimo uso. Da lì crei account nuovi (con un programma o con la scheda di un cliente), cambi password, carichi schede ed elimini account.
+
+- Le password si vedono solo se create o cambiate dal pannello: il sito le tiene solo cifrate. Restano in `data/account-password.json`, solo su questo PC (non vanno su GitHub).
+- Il pannello non è online: usa la chiave `admin.key` del PC e risponde solo a localhost.
+
+### Schede personali dei clienti
+
+Il cliente compila il questionario (`docs/questionario-clienti.md`). La sua scheda va in `data/clienti/<nome>.json` (7 giorni, esercizi presi dalla libreria; resta sul PC):
+
+```
+node admin.mjs crea ddonny --scheda data/clienti/ddonny.json --sito https://starfitplus.netlify.app
+node admin.mjs scheda ddonny data/clienti/ddonny.json --sito https://starfitplus.netlify.app
+```
+
+Il primo crea l'account con la scheda, il secondo la aggiorna. Il comando controlla che tutti gli esercizi esistano. Nell'app la scheda ha video, animazioni, consigli, modalità allenamento e mobilità come i programmi normali; `foodAvoid` toglie dai consigli i cibi che il cliente non mangia.
+
 ## Account demo
 
 Un account condiviso per far provare l'app: `node admin.mjs demo --programma terzino --sito https://starfitplus.netlify.app`.

@@ -7,6 +7,8 @@
    node admin.mjs password <nome>                cambia la password (chiude le sessioni aperte)
    node admin.mjs elimina <nome>                 elimina l'account e i suoi dati
    node admin.mjs programmi                      mostra i programmi disponibili
+   node admin.mjs crea <nome> --scheda <file>    crea un account con la sua scheda personale (file in data/clienti/)
+   node admin.mjs scheda <nome> <file>           carica o aggiorna la scheda personale di un account
    node admin.mjs demo --programma <id>          account demo condiviso con dati di esempio (si azzera ogni giorno)
 
    Di base lavora sul server locale (http://localhost:8080).
@@ -77,6 +79,19 @@ async function asUser(user, pass, fn) {
   try { await fn({ data: login.data || {}, save: d => post('/data', { data: d }, login.token) }); }
   finally { await post('/logout', null, login.token).catch(() => {}); }
 }
+// Scheda personale di un cliente da file JSON (resta sul PC, in data/clienti/): controlla giorni ed esercizi
+function readScheda(file) {
+  let sc; try { sc = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8')); } catch (e) { fail('Non riesco a leggere la scheda ' + file + ': ' + e.message); }
+  if (!sc || !Array.isArray(sc.days) || sc.days.length !== 7) fail('La scheda deve avere 7 giorni (da lunedì a domenica).');
+  const win = {};
+  new Function('window', fs.readFileSync(path.join(here, 'public', 'data.js'), 'utf8'))(win);
+  new Function('window', fs.readFileSync(path.join(here, 'public', 'library.js'), 'utf8'))(win);
+  const EX = Object.assign({}, win.FitLib, win.FitData.EX), miss = [];
+  sc.days.forEach(d => (d.items || []).forEach(it => { if (!it.link && !EX[it.ex]) miss.push(it.ex); }));
+  (sc.mob || []).forEach(m => { if (!EX[m.ex]) miss.push(m.ex); });
+  if (miss.length) fail('Esercizi che non esistono nella libreria: ' + [...new Set(miss)].join(', '));
+  return sc;
+}
 async function newPassword() {
   if (process.env.STARFIT_PASS) return process.env.STARFIT_PASS;
   const a = await ask('Password per ' + name + ': ', true);
@@ -114,13 +129,24 @@ if (cmd === 'elenco') {
 } else if (cmd === 'programmi') {
   const P = programs();
   Object.values(P).forEach(p => say('  • ' + p.id + '   ' + p.name));
+} else if (cmd === 'scheda') {
+  // Carica (o aggiorna) la scheda personale di un account: node admin.mjs scheda <nome> <file.json>
+  if (!name || !rawProg) fail('Scrivi nome e file: node admin.mjs scheda <nome> data/clienti/<nome>.json');
+  const sc = readScheda(rawProg);
+  await call('scheda', { user: name, scheda: sc });
+  say("✔ Scheda \"" + (sc.name || rawProg) + "\" caricata nell'account \"" + name + "\". Si aggiorna alla prossima apertura dell'app.");
 } else if (cmd === 'crea' || cmd === 'password') {
-  if (!name) fail('Scrivi il nome: node admin.mjs ' + cmd + ' <nome>' + (cmd === 'crea' ? ' --programma <id>' : ''));
+  if (!name) fail('Scrivi il nome: node admin.mjs ' + cmd + ' <nome>' + (cmd === 'crea' ? ' --programma <id> oppure --scheda <file.json>' : ''));
+  const schedaFile = flag('--scheda');
+  const sc = cmd === 'crea' && schedaFile ? readScheda(schedaFile) : null;
   const progId = (progFlag || 'terzino').trim().toLowerCase();
-  const prog = cmd === 'crea' ? checkProgram(progId) : null;
+  const prog = cmd === 'crea' && !sc ? checkProgram(progId) : null;
   const pass = await newPassword();
   await call(cmd === 'crea' ? 'create' : 'password', { user: name, pass });
-  if (cmd === 'crea') {
+  if (cmd === 'crea' && sc) {
+    await call('scheda', { user: name, scheda: sc });
+    say('✔ Account "' + name + '" creato con la scheda personale "' + (sc.name || schedaFile) + '".');
+  } else if (cmd === 'crea') {
     await asUser(name, pass, ({ data, save }) => save(Object.assign({}, data, { program: progId })));
     say('✔ Account "' + name + '" creato con il programma "' + prog.name + '".');
   } else say('✔ Password di "' + name + '" cambiata. Le sessioni aperte sono state chiuse.');

@@ -50,5 +50,25 @@ window.FitVideos = {
   abduction: { id: "9XeVkIdsz9E", ch: "Lamia D'Amico", it: true },
   sideplank: { id: "SzKsA7HdzKc", ch: "P4P Italia", it: true },
   catcow: { id: "SMAYXfZn_6M", ch: "Dott. Marco Segina", it: true },
-  tspine: { id: "eIN6PANljmY", ch: "Dott. Marco Segina", it: true }
+  tspine: { id: "eIN6PANljmY", ch: "Dott. Marco Segina", it: true },
+  // esercizi della libreria (prima scheda cliente)
+  "panca-inclinata-bilanciere": { id: "qC-NmNrY9fk", ch: "Project inVictus", it: true },
+  "chest-press-macchina-inclinata": { id: "VesHgJR14E8", ch: "Max Euceda" },
+  "pec-deck": { id: "Q9-u_q869nA", ch: "GianzCoach", it: true },
+  "lat-presa-stretta": { id: "jUP4KU90Z6o", ch: "Luigi Colbax - FIT OVER50", it: true },
+  "tapis-roulant-inclinato": { id: "nB5Z2IaM1O8", ch: "Dr. Roberto Bombagi", it: true },
+  "military-press-bilanciere": { id: "yalBWM_YjSQ", ch: "Luigi Colbax - FIT OVER50", it: true },
+  "pushdown-a-un-braccio": { id: "z-GYsUm3f9c", ch: "Project inVictus", it: true },
+  "curl-cavo-con-corda": { id: "w5HUAg5D7v4", ch: "Simone Cotrona", it: true },
+  "alzate-laterali-manubri": { id: "5Dyh1z6E6rM", ch: "NonSoloFitness", it: true },
+  "tricipiti-sopra-la-testa-cavo": { id: "3m56x6O8sS8", ch: "Newenergym", it: true },
+  "curl-alla-panca-scott": { id: "TlJtGMAGkI4", ch: "Project inVictus", it: true },
+  "alzate-posteriori-cavi-incrociati": { id: "Uxf3ATJOXEg", ch: "Project inVictus", it: true },
+  "squat-al-multipower": { id: "UpDB8MU_Ccc", ch: "Dott. Marco Marcellino Trainer", it: true },
+  "leg-curl-sdraiato": { id: "1zevKZn_n1E", ch: "Project inVictus", it: true },
+  "calf-in-piedi-alla-macchina": { id: "9HbbuUPsdPw", ch: "CORSI EVENTI 4 SPORT", it: true },
+  "leg-extension-monopodalica": { id: "82IuSLk5zNc", ch: "PureGym" },
+  "adduttori-alla-macchina": { id: "bzMYlffkkiE", ch: "Luigi Colbax - FIT OVER50", it: true },
+  "circonduzioni-spalle": { id: "Rf8nWdws-dk", ch: "Pierluigi de nigris", it: true },
+  "wall-slide": { id: "OvkpL_jY5mU", ch: "Luca Grisendi Personal Trainer Online", it: true }
 };

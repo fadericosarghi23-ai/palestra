@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>starfit+ · Account</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root { --steel: #A3ACB4; --steel-light: #BDC4CA; --line: #8A949C; --iron: #1B1D20; --iron-2: #25282C; --iron-3: #33373C; --fire: #E0321B; --fire-b: #FF5233; --ink: #111316; --muted: #353C43; --on: #E7EAED; --on-m: #A0A8AF; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--steel); color: var(--ink); font: 15px/1.45 Inter, system-ui, sans-serif; }
+header { background: var(--iron); color: var(--on); padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+header h1 { margin: 0; font: 700 22px/1 "Inter Tight", Inter, sans-serif; letter-spacing: -.02em; }
+header h1 em { font-style: normal; color: var(--fire); }
+header .site { font-size: 13px; color: var(--on-m); }
+main { max-width: 1200px; margin: 0 auto; padding: 18px 16px 60px; }
+.kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.kpi div { background: var(--iron); color: var(--on); border-radius: 12px; padding: 12px 14px; }
+.kpi b { display: block; font: 700 24px/1.1 "Inter Tight", sans-serif; }
+.kpi span { font-size: 12px; color: var(--on-m); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.chip { border: 1px solid var(--line); background: var(--steel-light); border-radius: 8px; padding: 7px 12px; font: 600 13px Inter, sans-serif; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--iron); color: var(--on); border-color: var(--iron); }
+input, select, textarea { font: 15px Inter, sans-serif; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0; }
+button { font: 600 14px Inter, sans-serif; border-radius: 8px; padding: 8px 12px; border: 1px solid var(--line); background: var(--steel-light); cursor: pointer; }
+button.red { background: var(--fire); color: #fff; border-color: var(--fire); }
+button.ghost { background: transparent; }
+button.arm { background: var(--fire); color: #fff; border-color: var(--fire); }
+.grid { display: grid; gap: 10px; }
+.card { background: var(--steel-light); border: 1px solid rgba(17,19,22,.12); border-radius: 14px; padding: 14px; display: grid; grid-template-columns: minmax(160px, 1.2fr) minmax(220px, 2fr) minmax(200px, 1.4fr); gap: 12px 18px; align-items: start; }
+@media (max-width: 860px) { .card { grid-template-columns: 1fr; } }
+.who b { font-size: 17px; }
+.who small, .muted { display: block; font-size: 12px; color: var(--muted); }
+.st { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-top: 6px; }
+.st.pagato { background: #2f7d32; color: #fff; } .st.tester { background: var(--iron); color: var(--on); } .st.demo { background: #5b6470; color: #fff; } .st.da-pagare { background: var(--fire); color: #fff; } .st.sospeso { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.f { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.f label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.f .wide { grid-column: 1 / -1; }
+.pw { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pw code { font: 600 15px ui-monospace, Consolas, monospace; background: var(--iron); color: var(--on); padding: 6px 10px; border-radius: 8px; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.saved { color: #2f7d32; font-size: 12px; font-weight: 600; }
+.panel { background: var(--iron); color: var(--on); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.panel h2 { margin: 0 0 10px; font: 700 18px "Inter Tight", sans-serif; }
+.panel .f label { color: var(--on-m); }
+.panel input, .panel select { background: var(--iron-2); color: var(--on); border-color: var(--iron-3); }
+.msg { padding: 10px 12px; border-radius: 10px; background: var(--iron); color: var(--on); margin-bottom: 12px; }
+.msg b { color: var(--fire-b); }
+.err { background: var(--fire); color: #fff; }
+.note { font-size: 13px; color: var(--muted); margin: 6px 0 14px; }
+</style>
+</head>
+<body>
+<header><h1>starfit<em>+</em> · account</h1><span class="site" id="site"></span></header>
+<main>
+  <div id="msg"></div>
+  <div class="kpi" id="kpi"></div>
+  <section class="panel"><h2>Nuovo account</h2>
+    <div class="f" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+      <label>Nome utente<input id="n-user" placeholder="es. ddonny" autocomplete="off"></label>
+      <label>Scheda<select id="n-prog"></select></label>
+      <label>Stato<select id="n-stato"><option value="da-pagare">Da pagare</option><option value="pagato">Pagato</option><option value="tester">Tester</option><option value="demo">Demo</option></select></label>
+      <label>Importo<input id="n-imp" placeholder="es. 29 €"></label>
+      <label>Note<input id="n-note" placeholder="facoltative"></label>
+      <label>Password<input id="n-pass" placeholder="vuoto = la creo io" autocomplete="off"></label>
+    </div>
+    <div class="acts"><button class="red" id="n-go">Crea account</button></div>
+  </section>
+  <div class="bar" id="filters"></div>
+  <p class="note">Le password si vedono solo per gli account creati o cambiati da questo pannello: il sito le conserva solo cifrate. Per gli altri usa «Nuova password». Le password restano solo su questo PC (data/account-password.json).</p>
+  <div class="grid" id="list"></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const STATI = [['pagato', 'Pagato'], ['tester', 'Tester'], ['demo', 'Demo'], ['da-pagare', 'Da pagare'], ['sospeso', 'Sospeso']];
+const PROG_LBL = { terzino: 'Calciatore (terzino)', glutei: 'Glutei, addome e schiena', custom: 'Scheda personale' };
+let S = { users: [], schede: [], filter: 'tutti', q: '' };
+async function call(p, body) {
+  const r = await fetch('/p/' + p, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pannello': '1' }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Errore'); return j;
+}
+const msg = (html, err) => { $('#msg').innerHTML = html ? '<div class="msg' + (err ? ' err' : '') + '">' + html + '</div>' : ''; if (html) window.scrollTo({ top: 0, behavior: 'smooth' }); };
+const fmtD = t => t ? new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const ago = t => { if (!t) return 'mai'; const d = Math.floor((Date.now() - t) / 864e5); return d <= 0 ? 'oggi' : d === 1 ? 'ieri' : d + ' giorni fa'; };
+const num = s => { const n = parseFloat(String(s || '').replace(',', '.').replace(/[^0-9.]/g, '')); return isFinite(n) ? n : 0; };
+async function load() {
+  try {
+    const st = await call('stato'); S.schede = st.schede;
+    $('#site').textContent = 'Account di ' + st.site + (st.keyOk ? '' : ' · manca la chiave admin.key');
+    $('#n-prog').innerHTML = '<option value="terzino">Calciatore (terzino)</option><option value="glutei">Glutei, addome e schiena</option>' + S.schede.map(f => '<option value="file:' + esc(f) + '">Scheda personale: ' + esc(f) + '</option>').join('');
+    S.users = (await call('users')).users; render();
+  } catch (e) { msg('Non riesco a leggere gli account: ' + esc(e.message), true); }
+}
+function render() {
+  const U = S.users, by = s => U.filter(u => (u.meta.stato || 'da-pagare') === s).length;
+  const incasso = U.filter(u => u.meta.stato === 'pagato').reduce((t, u) => t + num(u.meta.importo), 0);
+  $('#kpi').innerHTML = [['Account', U.length], ['Pagati', by('pagato')], ['Tester', by('tester')], ['Da pagare', by('da-pagare')], ['Incasso', incasso.toLocaleString('it-IT') + ' €']].map(x => '<div><b>' + x[1] + '</b><span>' + x[0] + '</span></div>').join('');
+  $('#filters').innerHTML = [['tutti', 'Tutti']].concat(STATI).map(s => '<button class="chip" data-f="' + s[0] + '" aria-pressed="' + (S.filter === s[0]) + '">' + s[1] + '</button>').join('') + '<input id="q" type="search" placeholder="Cerca un account" value="' + esc(S.q) + '" style="flex:1;min-width:160px">';
+  const list = U.filter(u => (S.filter === 'tutti' || (u.meta.stato || 'da-pagare') === S.filter) && (!S.q || u.name.includes(S.q.toLowerCase())));
+  $('#list').innerHTML = list.map(u => {
+    const m = u.meta || {}, st = m.stato || 'da-pagare';
+    const prog = u.program === 'custom' ? 'Scheda personale' + (u.scheda ? ': ' + u.scheda : '') : (PROG_LBL[u.program] || u.program);
+    return '<article class="card" data-u="' + esc(u.name) + '">'
+      + '<div class="who"><b>' + esc(u.name) + '</b><span class="st ' + st + '">' + esc((STATI.find(s => s[0] === st) || [, st])[1]) + '</span>'
+      + '<small>' + esc(prog) + '</small><small>Creato ' + fmtD(u.created) + ' · usato ' + ago(u.lastUse) + '</small></div>'
+      + '<div class="f"><label>Stato<select data-k="stato">' + STATI.map(s => '<option value="' + s[0] + '"' + (s[0] === st ? ' selected' : '') + '>' + s[1] + '</option>').join('') + '</select></label>'
+      + '<label>Importo<input data-k="importo" value="' + esc(m.importo || '') + '" placeholder="es. 29 €"></label>'
+      + '<label>Pagato il<input type="date" data-k="pagatoIl" value="' + esc(m.pagatoIl || '') + '"></label>'
+      + '<label>Ultima modifica<span class="muted" style="padding-top:9px">' + (m.at ? fmtD(m.at) : '—') + '</span></label>'
+      + '<label class="wide">Note<input data-k="note" value="' + esc(m.note || '') + '" placeholder="es. ragazzo che testa, scadenza…"></label><span class="saved" data-saved hidden>Salvato ✓</span></div>'
+      + '<div><div class="pw">' + (u.pass ? '<code data-pass="' + esc(u.pass) + '">••••••••</code><button class="ghost" data-a="show">Mostra</button><button class="ghost" data-a="copy">Copia</button>' : '<span class="muted">Password non visibile (creata fuori dal pannello)</span>') + '</div>'
+      + '<div class="acts"><button data-a="newpw">Nuova password</button>' + (S.schede.length ? '<select data-a="sch"><option value="">Carica scheda…</option>' + S.schede.map(f => '<option value="' + esc(f) + '">' + esc(f) + '</option>').join('') + '</select>' : '') + '<button class="ghost" data-a="del">Elimina</button></div></div>'
+      + '</article>';
+  }).join('') || '<p class="muted">Nessun account.</p>';
+}
+const card = el => el.closest('[data-u]'), userOf = el => card(el).dataset.u;
+const confirm2 = (b, txt) => { if (b.dataset.c === '1') return true; b.dataset.c = '1'; const o = b.textContent; b.textContent = txt; b.classList.add('arm'); setTimeout(() => { if (b.isConnected) { b.dataset.c = ''; b.textContent = o; b.classList.remove('arm'); } }, 3500); return false; };
+document.addEventListener('click', async e => {
+  const f = e.target.closest('[data-f]'); if (f) { S.filter = f.dataset.f; render(); return; }
+  const b = e.target.closest('button[data-a]'); if (!b) { if (e.target.id === 'n-go') create(); return; }
+  const a = b.dataset.a, u = userOf(b), code = card(b).querySelector('code');
+  if (a === 'show') { const s = code.textContent.startsWith('•'); code.textContent = s ? code.dataset.pass : '••••••••'; b.textContent = s ? 'Nascondi' : 'Mostra'; }
+  if (a === 'copy') { await navigator.clipboard.writeText(code.dataset.pass); b.textContent = 'Copiata ✓'; }
+  if (a === 'newpw') { if (!confirm2(b, 'Sicuro? Chiude le sessioni aperte')) return; try { const r = await call('password', { user: u }); msg('Nuova password di <b>' + esc(u) + '</b>: <code>' + esc(r.pass) + '</code>'); load(); } catch (x) { msg(esc(x.message), true); } }
+  if (a === 'del') { if (!confirm2(b, 'Elimina davvero (non si annulla)')) return; try { await call('elimina', { user: u }); msg('Account <b>' + esc(u) + '</b> eliminato.'); load(); } catch (x) { msg(esc(x.message), true); } }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.a === 'sch' && t.value) { const u = userOf(t); try { await call('scheda', { user: u, scheda: t.value }); msg('Scheda <b>' + esc(t.value) + '</b> caricata per <b>' + esc(u) + '</b>.'); load(); } catch (x) { msg(esc(x.message), true); } return; }
+  if (!t.dataset.k) return;
+  const c = card(t), u = c.dataset.u, meta = {}; c.querySelectorAll('[data-k]').forEach(i => { meta[i.dataset.k] = i.value; });
+  try { const r = await call('meta', { user: u, meta }); const usr = S.users.find(x => x.name === u); usr.meta = r.meta; const sv = c.querySelector('[data-saved]'); sv.hidden = false; setTimeout(() => { render(); }, 700); } catch (x) { msg(esc(x.message), true); }
+});
+document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value.trim(); const p = e.target.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(p, p); } });
+async function create() {
+  const user = $('#n-user').value.trim().toLowerCase(), pv = $('#n-prog').value;
+  if (!/^[a-z0-9._-]{3,24}$/.test(user)) return msg('Nome utente: da 3 a 24 caratteri, minuscole, numeri, punto o trattino.', true);
+  const body = { user, stato: $('#n-stato').value, importo: $('#n-imp').value, note: $('#n-note').value, pass: $('#n-pass').value };
+  if (pv.startsWith('file:')) body.scheda = pv.slice(5); else body.program = pv;
+  try { const r = await call('crea', body); msg('Account <b>' + esc(user) + '</b> creato. Password: <code>' + esc(r.pass) + '</code> · mandala al cliente in privato.'); ['#n-user', '#n-imp', '#n-note', '#n-pass'].forEach(s => { $(s).value = ''; }); load(); }
+  catch (x) { msg(esc(x.message), true); }
+}
+load();
+</script>
+</body>
+</html>

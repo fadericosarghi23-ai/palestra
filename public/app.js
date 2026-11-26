@@ -18,7 +18,23 @@ window.FitAccount.whenReady(function () {
   const someH = (name, e) => HK[name].some(f => { try { return f(e) === true; } catch (x) { console.error('starfit+ modulo', name, x); return false; } });
 
   /* Programma dell'account: lo sceglie chi crea l'account (admin.mjs crea <nome> --programma <id>) */
-  const PROG0 = PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
+  // Scheda personale di un cliente (caricata con admin.mjs crea <nome> --scheda <file>): sta nei dati dell'account
+  const CUST_RAW = store.get('program', '') === 'custom' ? JSON.stringify(store.get('customProgram', null)) : 'null';
+  function customProgram() {
+    const c = JSON.parse(CUST_RAW);
+    if (!c || !Array.isArray(c.days) || c.days.length !== 7) return null;
+    const base = PROGRAMS.terzino, IDS = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'], NAMES = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+    const days = c.days.map((d, i) => Object.assign({ id: IDS[i], d: NAMES[i], md: '', type: 'rest', label: 'Riposo', title: 'Riposo e mobilità' }, d, {
+      id: IDS[i], items: (d.items || []).filter(it => it && (it.link || EX[it.ex]))
+    }));
+    return Object.assign({
+      name: 'La tua scheda', eyebrow: 'Scheda settimanale', lede: '', stats: [['', 'Altezza'], ['', 'Peso'], ['', 'Obiettivo']], heroAnim: 'bench',
+      pillars: [], note: '', footer: 'Scheda personale. Se senti un dolore che non passa, fermati e chiedi a un fisioterapista.',
+      mob: base.mob, tips: {}, testDay: 0, calNote: '', macros: base.macros, plan: base.plan
+    }, c, { id: 'custom', days, mob: (Array.isArray(c.mob) && c.mob.filter(m => m && EX[m.ex]).length ? c.mob.filter(m => m && EX[m.ex]) : base.mob),
+      plan: Object.assign({}, base.plan, c.plan || {}) });
+  }
+  const PROG0 = customProgram() || PROGRAMS[store.get('program', 'terzino')] || PROGRAMS.terzino;
   /* Giorno della partita (solo per i programmi che lo prevedono): cambia tutta la settimana */
   const MATCHDAY = PROG0.layouts ? (PROG0.layouts[store.get('matchday', 'dom')] ? store.get('matchday', 'dom') : 'dom') : null;
   const PROG = Object.assign({}, PROG0, MATCHDAY ? PROG0.layouts[MATCHDAY] : {});
@@ -420,7 +436,8 @@ window.FitAccount.whenReady(function () {
 
   /* ---------- calendario: 12 settimane, 23 nov 2026 → 14 feb 2027 ---------- */
   const BLOCK = Math.max(1, Math.min(9, +store.get('block', 1) || 1));
-  const START = new Date(2026, 10, 23 + (BLOCK - 1) * 84), WEEKS = 12, DAY = 86400000;
+  const START0 = /^\d{4}-\d{2}-\d{2}$/.test(PROG0.start || '') ? PROG0.start.split('-').map(Number) : [2026, 11, 23];
+  const START = new Date(START0[0], START0[1] - 1, START0[2] + (BLOCK - 1) * 84), WEEKS = 12, DAY = 86400000;
   // date sul calendario (non in millisecondi): restano a mezzanotte anche col cambio dell'ora legale
   const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const END = addD(START, WEEKS * 7 - 1);
@@ -577,7 +594,7 @@ window.FitAccount.whenReady(function () {
       const list = pool[key], n = list.length;
       for (let i = 0; i < n; i++) {
         const fd = byName(list[(i + sugShift) % n]);
-        if (!fd || eaten.has(fd.n) || out.some(o => o.fd === fd)) continue;
+        if (!fd || eaten.has(fd.n) || out.some(o => o.fd === fd) || (PROG.foodAvoid || []).includes(fd.n)) continue;
         const sz = sizeFor(fd, Math.min(r[key], CAP[key][meal]), key, r.k);
         if (!sz) continue;
         const v = forGrams(fd, sz.g); out.push({ fd, sz, v, key });
@@ -1127,7 +1144,8 @@ window.FitAccount.whenReady(function () {
     glutei: ['Glutei', 'Gambe', 'Femorali', 'Core', 'Schiena', 'Petto e spalle', 'Braccia', 'Mobilità', 'Stretching', 'Cardio', 'Riscaldamento', 'Attivazione', 'Prevenzione', 'Recupero', 'Velocità', 'Agilità', 'Pliometria', 'Potenza', 'Contrasti']
   };
   const catRank = c => { const o = CAT_ORDER[PROG.id] || CAT_ORDER.terzino, i = o.indexOf(c); return i < 0 ? 99 : i; };
-  const forMe = e => !e.per || e.per.includes(PROG.id);
+  const PER_ID = PROGRAMS[PROG.id] ? PROG.id : (PROG.per === 'glutei' ? 'glutei' : 'terzino');
+  const forMe = e => !e.per || e.per.includes(PER_ID);
   const exText = (id, e) => fold([e.name, e.cat, e.eq || '', e.mus.join(' '), id.replace(/-/g, ' ')].join(' '));
   const nameHits = (id, words) => { const n = fold(EX[id].name + " " + EX[id].cat); return words.reduce((t, x) => t + (n.includes(x) ? 1 : 0), 0); };
   function libMatches() {
@@ -1485,7 +1503,8 @@ window.FitAccount.whenReady(function () {
   window.addEventListener('hashchange', () => { mobEdit = false; toggleMore(false); const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
-    if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();
+    if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && (PROGRAMS[store.get('program', 'terzino')] || store.get('program', '') === 'custom')) return location.reload();
+    if (PROG.id === 'custom' && JSON.stringify(store.get('customProgram', null)) !== CUST_RAW) return location.reload();
     if (MATCHDAY && PROG0.layouts[store.get('matchday', 'dom')] && store.get('matchday', 'dom') !== MATCHDAY) return location.reload();
     done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
     syncSlow();
