@@ -157,7 +157,7 @@
       sb.dataset.sets = ls;
       sb.innerHTML = `${dots}<span class="sb-acts">${hold ? hold.outerHTML : ''}${main}${undo}</span>`;
       if (ls > 1 && n >= ls && !A.done[key]) {
-        A.done[key] = true; A.store.set('done', A.done);
+        A.done[key] = true; A.store.set('done', A.done); if (A.markTrained) A.markTrained(key);
         const card = sb.closest('.ex');
         if (card) { const cb = card.querySelector('.done input'); if (cb) cb.checked = true; card.classList.add('is-done'); }
       }
@@ -195,7 +195,8 @@
     // acqua
     const W = obj('water', {});
     const wDays = keys.filter(dk => num(W[dk]) != null);
-    const waterOk = keys.filter(dk => (num(W[dk]) || 0) >= WATER_GOAL).length;
+    const goalOf = dk => (A.waterGoal ? A.waterGoal(dk) : WATER_GOAL) || WATER_GOAL;
+    const waterOk = keys.filter(dk => (num(W[dk]) || 0) >= goalOf(dk)).length;
     // sonno
     const R = ready(), WA = wact();
     const sl = keys.map(dk => { const a = num((R[dk] || {}).sonno), b = num((WA[dk] || {}).sonno); return a != null ? a : b; }).filter(v => v != null && v > 1 && v < 16);
@@ -270,8 +271,8 @@
       ${tips.length ? `<ul class="rd-wtips">${tips.slice(0, 2).map(t => `<li>${t}</li>`).join('')}</ul>` : '<p class="small">Settimana in linea con la scheda: continua così.</p>'}</section>`;
   }
 
-  H.home.push(() => readyHTML(false));
-  H.home.push(() => weekHTML());
+  H.home.push(Object.assign(() => readyHTML(false), { slot: 'top' }));
+  H.home.push(Object.assign(() => weekHTML(), { slot: 'more', rank: 0 }));
   H.dayTop.push(d => d && d.id === A.TODAY_ID() ? readyHTML(true) : '');
 
   /* ---------- 3 · Macro in base all'attività ---------- */

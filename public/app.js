@@ -434,7 +434,7 @@ window.FitAccount.whenReady(function () {
       : cw <= WEEKS ? `Sei alla <b>settimana ${cw} di ${WEEKS}</b>: ${left === 0 ? 'oggi è il traguardo' : 'mancano ' + left + ' giorni al traguardo'}.`
         : `<b>Programma completato.</b> Fai i test finali e imposta il prossimo blocco.`;
     const cells = Array.from({ length: WEEKS }, (_, i) => {
-      const n = i + 1, a = weekStart(n), b = new Date(a.getTime() + 6 * DAY);
+      const n = i + 1, a = weekStart(n), b = addD(a, 6);
       const tags = [];
       if (n % 4 === 0) tags.push('Scarico');
       if (TEST_WEEKS.includes(n)) tags.push('Test ' + fmt(testDate(n), { weekday: 'short', day: 'numeric' }));
@@ -481,17 +481,19 @@ window.FitAccount.whenReady(function () {
   function weightHTML(compact) {
     const today = dkey(new Date()), cur = weights()[today], l = wList(), last = l[l.length - 1];
     const diffs = wDiffs().map(x => `<span><b>${x[0]}</b> ${x[1]}</span>`).join('');
-    return `<section class="panel dark w-card${compact ? ' compact' : ''}" id="w-card"><div class="w-top"><h3>Peso di oggi</h3><span class="w-day">${fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+    return `<section class="panel dark w-card${compact ? ' compact' : ''}${compact === 'home' ? ' w-home' : ''}" id="w-card"><div class="w-top"><h3>Peso di oggi</h3><span class="w-day">${fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
       <div class="w-form"><label class="w-in"><input id="w-in" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Peso di oggi in kg" placeholder="${last ? kg(last[1]) : '00,0'}" value="${cur != null ? kg(cur) : ''}"><span>kg</span></label>
         <button type="button" class="sb-btn" id="w-save">${cur != null ? 'Aggiorna' : 'Salva'}</button></div>
       <p class="w-msg" id="w-msg">${cur != null ? 'Segnato oggi: <b>' + kg(cur) + ' kg</b>' : last ? 'Ultimo: ' + kg(last[1]) + ' kg, ' + fmt(kdate(last[0]), { weekday: 'short', day: 'numeric', month: 'short' }) : 'Pesati al mattino, dopo il bagno e prima di mangiare.'}</p>
       ${diffs ? `<div class="w-diff">${diffs}</div>` : ''}
-      ${compact ? '' : wChart(l.slice(-30)) + `<a class="w-all" href="#piano">Tutto lo storico <b>→</b></a>`}
+      ${compact === 'home' ? `<a class="w-all" href="#piano">Storico <b>→</b></a>` : compact ? '' : wChart(l.slice(-30)) + `<a class="w-all" href="#piano">Tutto lo storico <b>→</b></a>`}
     </section>`;
   }
   function weightLogHTML() {
     const l = wList().reverse();
+    const lc = wList().slice(-30);
     return `<section class="sec panel" id="w-log"><h3>Diario del peso</h3>
+      ${lc.length >= 2 ? `<div class="w-chart-box">${wChart(lc)}</div>` : ''}
       <p class="small">Hai dimenticato un giorno? Scegli la data e scrivi il peso.</p>
       <div class="w-form"><label class="w-date">Giorno<input type="date" id="w-date" value="${dkey(new Date())}" max="${dkey(new Date())}"></label>
         <label class="w-in"><input id="w-in2" inputmode="decimal" autocomplete="off" aria-label="Peso in kg" placeholder="00,0"><span>kg</span></label>
@@ -871,13 +873,53 @@ window.FitAccount.whenReady(function () {
   }
 
   /* ---------- viste ---------- */
+  /* Dati in alto nella home: quelli della scheda, oppure quelli cambiati da te (store "profile") */
+  function heroStats() {
+    const p = store.get('profile', {}) || {}, st = PROG.stats;
+    const lw = lastWeight();
+    return [
+      { v: p.altezza || st[0][0], l: 'Altezza' },
+      { v: lw ? kg(lw[1]) + ' kg' : (p.peso || st[1][0]), l: lw ? 'Ultimo peso' : 'Peso' },
+      { v: p.obiettivo || st[2][0], l: p.obLabel || st[2][1], hot: true },
+      { v: fmt(END, { day: 'numeric', month: 'short', year: 'numeric' }), l: 'Traguardo' }
+    ];
+  }
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
-      <div><h1 class="brandname neon" aria-label="starfit+">starfit<span>+</span></h1>
-        <p class="lede">${esc(PROG.lede)}</p>
-        <div class="stats">${PROG.stats.map(x => { const lw = x[1] === 'Oggi' && lastWeight(); return `<div class="stat${x[2] ? ' hot' : ''}"><b>${esc(lw ? kg(lw[1]) + ' kg' : x[0])}</b><span>${lw ? 'Ultimo peso' : esc(x[1])}</span></div>`; }).join('')}<div class="stat"><b>${fmt(END, { day: 'numeric', month: 'short', year: 'numeric' })}</b><span>Traguardo</span></div></div>
-      </div>
+      <div class="stats">${heroStats().map(x => `<div class="stat${x.hot ? ' hot' : ''}"><b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`).join('')}</div>
     </div></section>`;
+  }
+  // Pagina Profilo (menu dell'account): i dati che si vedono in alto nella home
+  function viewProfile() {
+    const p = store.get('profile', {}) || {}, st = PROG.stats, lw = lastWeight();
+    return `<div class="dayhead"><div><div class="meta"><span class="chip act">Account</span></div>
+        <p class="big">Profilo</p><p class="sub">${esc(window.FitAccount.user() || '')} · ${esc(PROG.name)}</p>
+        <p class="goal">Questi dati compaiono in alto nella home. Cambiali quando vuoi.</p></div></div>
+      <form class="panel dark hero-ed" id="hero-ed" autocomplete="off">
+        <label>Altezza<input id="he-alt" value="${esc(p.altezza || st[0][0])}" placeholder="${esc(st[0][0])}" maxlength="12"></label>
+        <label>Peso di oggi (kg)<input id="he-peso" inputmode="decimal" value="${lw ? esc(kg(lw[1])) : ''}" placeholder="${esc(st[1][0])}"></label>
+        <label>Nome del terzo dato<input id="he-obl" value="${esc(p.obLabel || st[2][1])}" placeholder="${esc(st[2][1])}" maxlength="20"></label>
+        <label>Valore<input id="he-ob" value="${esc(p.obiettivo || st[2][0])}" placeholder="${esc(st[2][0])}" maxlength="20"></label>
+        <p class="hero-ed-n">Il peso va anche nel diario del peso. Il traguardo (${fmt(END, { day: 'numeric', month: 'long', year: 'numeric' })}) segue il calendario delle 12 settimane.</p>
+        <div class="hero-ed-a"><button type="submit" class="sb-btn">Salva</button><button type="button" class="btn-ghost" id="he-reset">Ripristina i dati della scheda</button></div>
+        ${profMsg ? `<p class="hero-ed-ok">${esc(profMsg)}</p>` : ''}
+      </form>`;
+  }
+  let profMsg = '';
+  function onHeroClick(e) {
+    if (e.target.closest('#he-reset')) { store.set('profile', {}); profMsg = 'Ripristinati i dati della scheda.'; buzz(); route(true); return true; }
+    return false;
+  }
+  function onHeroSubmit(e) {
+    if (!e.target || e.target.id !== 'hero-ed') return false;
+    e.preventDefault();
+    const val = id => (document.getElementById(id).value || '').trim().slice(0, 20);
+    const p = { altezza: val('he-alt'), obiettivo: val('he-ob'), obLabel: val('he-obl') };
+    Object.keys(p).forEach(k => { if (!p[k]) delete p[k]; });
+    store.set('profile', p);
+    const w = parseKg(val('he-peso')); if (w != null) setWeight(dkey(new Date()), w);
+    profMsg = 'Salvato ✓ Lo vedi in alto nella home.'; buzz(); route(true);
+    return true;
   }
 
   /* Avviso per installare l'app sull'iPhone (solo in Safari, non nell'app già installata) */
@@ -910,6 +952,9 @@ window.FitAccount.whenReady(function () {
       `<button type="button" data-matchday="${k}" aria-pressed="${k === MATCHDAY}">${esc(PROG0.layouts[k].matchLabel)}</button>`).join('')}</div>
       <span class="mday-h">${MATCHDAY === 'dom' ? 'Giochi di sabato? Tocca Sabato: la settimana si riorganizza da sola.' : 'Settimana riorganizzata per la partita di sabato.'}</span></div>`;
   }
+  const homeSlot = f => { if (f.slot) return f.slot; const t = String(f); return /readyHTML/.test(t) ? 'top' : /waterHTML/.test(t) ? 'duo' : /homeBlockHTML/.test(t) ? 'mid' : 'more'; };
+  const homeRank = f => { if (f.rank != null) return f.rank; const t = String(f); return /weekHTML/.test(t) ? 0 : /sfHTML/.test(t) ? 1 : 2; };
+  const homeH = slot => HK.home.filter(f => homeSlot(f) === slot).sort((a, b) => homeRank(a) - homeRank(b)).map(f => { try { return f() || ''; } catch (e) { console.error('starfit+ home', e); return ''; } }).join('');
   function viewHome() {
     const todayId = TODAY_ID();
     const tiles = days().map(d => {
@@ -922,7 +967,8 @@ window.FitAccount.whenReady(function () {
         ${pr.tot ? `<span class="prog"><i style="width:${Math.round(pr.n / pr.tot * 100)}%"></i></span><span class="prog-l">${pr.n}/${pr.tot} fatti</span>` : '<span class="prog-l">Mobilità 10′</span>'}
       </a>`;
     }).join('');
-    return installHTML() + `<section class="sec">${todayHTML()}</section>${runH('home')}<div class="sec">${weightHTML(false)}</div>` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
+    const more = homeH('more');
+    return installHTML() + `<section class="sec">${todayHTML()}</section>${homeH('top')}<div class="sec home-duo">${weightHTML('home')}${homeH('duo')}</div>${homeH('mid')}${more ? `<section class="sec home-more"><h2 class="home-h">La tua settimana</h2>${more}</section>` : ''}` + calendarHTML() + `<section class="sec"><div class="sec-h"><h2>La settimana</h2><button class="btn-ghost" type="button" id="reset">Azzera la settimana</button></div>
       ${matchPickHTML()}<div class="week">${tiles}</div></section>
       <section class="sec quick">
         <a href="#mobilita"><b>Mobilità</b><span>10′ ogni giorno</span></a>
@@ -1180,15 +1226,17 @@ window.FitAccount.whenReady(function () {
   }
   function route(keep) {
     syncWatch();
+    // testo in fondo: con altezza e peso del profilo
+    { const f = document.querySelector('footer .wrap'), hs = heroStats(); if (f) f.textContent = PROG.footer.replace(PROG.stats[0][0], hs[0].v).replace(PROG.stats[1][0], hs[1].v); }
     let id = (location.hash || '').replace('#', '') || 'settimana';
     if (id === 'oggi') id = TODAY_ID();
     const day = dayById(id);
-    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch'].includes(id) && !HK.views[id]) id = 'settimana';
+    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch', 'profilo'].includes(id) && !HK.views[id]) id = 'settimana';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
     unmount(main); unmount(hero);
     hero.innerHTML = id === 'settimana' ? heroHTML() : '';
-    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : HK.views[id] ? HK.views[id]() : viewHome();
+    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : id === 'profilo' ? viewProfile() : HK.views[id] ? HK.views[id]() : viewHome();
     mountFigures(hero); mountFigures(main);
     if (id === 'esercizi') applyLib();
     if (id === 'settimana') centerCalendar();
@@ -1206,6 +1254,7 @@ window.FitAccount.whenReady(function () {
     const k = e.target.dataset && e.target.dataset.key;
     if (k) { if (e.target.checked) { done[k] = true; markTrained(k); } else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
+  document.addEventListener('submit', e => { onHeroSubmit(e); });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     if (e.target.id === 'w-in') { e.preventDefault(); e.target.blur(); saveWeightFrom('w-in', dkey(new Date())); }
@@ -1226,6 +1275,7 @@ window.FitAccount.whenReady(function () {
   });
   document.addEventListener('click', e => {
     if (someH('click', e)) return;
+    if (onHeroClick(e)) return;
     if (onEditClick(e)) return;
     if (onFoodClick(e)) return;
     if (e.target.closest('[data-copy], #wt-make, #wt-new, #push-on, #push-test, #push-off')) { onWatchClick(e); return; }
@@ -1285,14 +1335,19 @@ window.FitAccount.whenReady(function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', () => { editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
+  window.addEventListener('hashchange', () => { const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
     if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();
     if (MATCHDAY && PROG0.layouts[store.get('matchday', 'dom')] && store.get('matchday', 'dom') !== MATCHDAY) return location.reload();
     done = store.get('done', {}); setsDone = store.get('sets', {}); speed = store.get('speed', 1); mediaMode = store.get('media', 'video');
-    syncSlow(); route(true);
+    syncSlow();
+    const ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.closest('#main')) { if (!ae.dataset.waitRoute) { ae.dataset.waitRoute = '1'; ae.addEventListener('blur', () => { delete ae.dataset.waitRoute; setTimeout(() => route(true), 0); }, { once: true }); } }
+    else route(true);
   });
+  // Le foto di progresso stanno sul telefono: chiedi a Safari di non cancellarle da solo
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* niente */ }
   window.FitApp = {
     store, EX, ANIM, PROG, PROG0, MATCHDAY, BLOCK, START, END, DAY, WEEKS, TEST_WEEKS, MEALS, MAC0, hooks: HK,
     days, dayById, findItem, saveItems, swapExercise, alternatives, forMe, exMeta, card, mountFigures, unmount,

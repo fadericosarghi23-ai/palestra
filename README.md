@@ -33,6 +33,7 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 - macro che cambiano con il giorno (campo, partita, palestra) e con le calorie del Watch
 - codice a barre degli alimenti (Open Food Facts), pasti preferiti, «Ripeti ieri», lista della spesa, acqua
 - blocco 2 dopo il 14 febbraio, costruito sui test e con esercizi nuovi
+- pagina Profilo (menu dell'account) per cambiare altezza, peso e obiettivo mostrati nella home
 - registro dei test, alimentazione e regole
 
 Scheda modificata, serie fatte, peso, cibo, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.
@@ -54,6 +55,7 @@ public/                 il sito: è l'unica cartella pubblicata
   daily.js              come stai oggi, riepilogo, macro del giorno, sonno dal Watch
   foodplus.js           codice a barre, preferiti, lista della spesa, acqua
   season.js             blocco 2 e sfida della settimana
+  news.js               schermata Novità e avviso di aggiornamento
   videos.js             video YouTube per esercizio
   anim.js               animazioni degli esercizi
   timer.js              timer di recupero e cronometro

@@ -357,7 +357,8 @@ body.has-timer .pg-scroll { padding-bottom: calc(190px + env(safe-area-inset-bot
     if (ni === OV.i) return;
     OV.i = ni; A.buzz(8); renderOv(true);
   }
-  function markDone(uid) { const D = A.done; if (D && !D[uid]) { D[uid] = true; store.set('done', D); } }
+  // come la spunta della scheda: segna anche il giorno di allenamento (riepilogo e sfida)
+  function markDone(uid) { const D = A.done; if (D && !D[uid]) { D[uid] = true; store.set('done', D); if (A.markTrained) A.markTrained(uid); } }
   const curIt = () => OV && OV.items[OV.i];
   const cardBtn = (uid, act) => document.querySelector(`#main .setbar[data-key="${cssq(uid)}"] button[data-act="${act}"]`);
 

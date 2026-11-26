@@ -505,7 +505,8 @@ html.fp-lock, html.fp-lock body { overflow: hidden; }
     return scan + waterHTML(dk, false) + shopHTML();
   });
   A.hooks.meal.push(mealHook);
-  A.hooks.home.push(() => waterHTML(todayKey(), true));
+  A.hooks.home.push(Object.assign(() => waterHTML(todayKey(), true), { slot: 'duo' }));
+  A.waterGoal = dk => waterGoal(dk).n; // un solo obiettivo dell'acqua per tutta l'app
   A.hooks.click.push(e => {
     const t = e.target; if (!t || !t.closest) return false;
     if (onScanClick(t)) return true;

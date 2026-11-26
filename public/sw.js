@@ -1,7 +1,7 @@
 /* starfit+ — service worker: l'app funziona anche senza rete.
    Attivo solo su HTTPS (o localhost): su http://192.168... il browser non lo avvia. */
-const VERSION = 'fit-v12';
-const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './food.js', './library.js', './account.js', './app.js', './progress.js', './body.js', './daily.js', './foodplus.js', './season.js',
+const VERSION = 'fit-v16';
+const SHELL = ['./', './index.html', './splash-1170x2532.png', './anim.js', './data.js', './videos.js', './timer.js', './food.js', './library.js', './account.js', './app.js', './progress.js', './body.js', './daily.js', './foodplus.js', './season.js', './news.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 const RUNTIME = 'fit-runtime-v1';
 
@@ -17,10 +17,15 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   // Gli account (/api) vanno sempre in rete e non vengono mai salvati in cache
   if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
-  // File dell'app: prima la rete (così vedi subito gli aggiornamenti), se manca la rete la copia salvata
+  // File dell'app: si apre subito con la copia salvata sul telefono e intanto si aggiorna in sottofondo.
+  // Le versioni nuove arrivano con un nuovo service worker (VERSION), che scarica tutti i file insieme.
   if (url.origin === self.location.origin) {
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })
-      .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
+    e.respondWith(caches.open(VERSION).then(c => c.match(req, { ignoreSearch: true }).then(hit => {
+      const net = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; })
+        .catch(() => hit || caches.match('./index.html'));
+      if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
+      return net;
+    })));
     return;
   }
   // Font e anteprime dei video: copia salvata subito, aggiornata in background

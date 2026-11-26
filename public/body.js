@@ -235,7 +235,7 @@
       ${since !== null && since > GAP ? '<div class="bd-warn">È ora delle foto del mese</div>' : ''}
       <section class="sec panel"><h3>Foto</h3>
         <p class="small" style="margin-top:0"><b>Le foto restano solo su questo iPhone, non vanno online.</b> Se cancelli i dati del sito o cambi telefono, le perdi.</p>
-        <div class="bd-pose">${POSES.map(([id, nm]) => `<label>${nm}<input type="file" accept="image/*" capture="environment" data-bd-file="${id}"></label>`).join('')}</div>
+        <div class="bd-pose">${POSES.map(([id, nm]) => `<label>${nm}<input type="file" accept="image/*" data-bd-file="${id}"></label>`).join('')}</div>
         <p class="small" id="bd-msg">${esc(msg)}</p>
         <div id="bd-photos">${photosHTML()}</div></section>
       <section class="sec panel" id="bd-cmp">${compareHTML()}</section>

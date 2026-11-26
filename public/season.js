@@ -221,7 +221,8 @@
     if (!Object.keys(pairs).length) return;
     const plan = store.get('plan', {}) || {};
     Object.keys(L).forEach(k => {
-      ((L[k] && L[k].days) || []).forEach(d => {
+      // la settimana "dom" non ha giorni suoi: usa quelli di base del programma
+      ((L[k] && (L[k].days || A.PROG0.days)) || []).forEach(d => {
         const pk = d && (d.pk || d.id);
         if (!pk || byPk[pk] || changed[pk] || SKIP_TYPES.includes(d.type)) return;
         const items = Array.isArray(plan[pk]) ? JSON.parse(JSON.stringify(plan[pk]))
@@ -273,6 +274,13 @@
   /* ---------- sfida della settimana ---------- */
   const onHome = () => { const h = (location.hash || '').replace('#', ''); return !h || h === 'settimana'; };
   const cap = s => { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+  // Dopo una risposta del server ridisegna solo il riquadro della sfida:
+  // ridisegnare tutta la home chiuderebbe la tastiera e cancellerebbe quello che stai scrivendo (es. il peso)
+  function sfRefresh() {
+    if (!onHome()) return;
+    const box = document.querySelector('#main .sea-sf');
+    if (box) box.outerHTML = sfHTML(); else A.route(true);
+  }
   function sfLoad() {
     if (S.sfLoading) return;
     const old = S.sf && (S.sf.data || S.sf.old) || null;
@@ -281,9 +289,9 @@
     Promise.resolve().then(() => A.api('GET', '/sfida'))
       .then(d => { S.sf = { at: Date.now(), data: d && typeof d === 'object' ? d : { on: false, rows: [] } }; })
       .catch(e => { S.sf = { at: Date.now(), err: e && e.status ? 'server' : 'offline', old }; })
-      .then(() => { S.sfLoading = false; if (onHome()) A.route(true); });
+      .then(() => { S.sfLoading = false; sfRefresh(); });
   }
-  window.addEventListener('online', () => { if (S.sf && S.sf.err) { S.sf.at = 0; if (onHome()) A.route(true); } });
+  window.addEventListener('online', () => { if (S.sf && S.sf.err) { S.sf.at = 0; sfRefresh(); } });
   function sfHTML() {
     if (!S.sf || Date.now() - S.sf.at > 60000) sfLoad();
     const st = S.sf, data = st && (st.data || st.old);
@@ -317,11 +325,12 @@
     Promise.resolve().then(() => A.api('POST', '/sfida', { on }))
       .then(() => { S.sf = null; })
       .catch(e => { S.sfMsg = e && e.status ? 'Non è andata: riprova tra poco.' : 'Non riesco a collegarmi: riprova quando hai la rete.'; })
-      .then(() => { S.sfBusy = false; if (onHome()) A.route(true); });
+      .then(() => { S.sfBusy = false; sfRefresh(); });
   }
 
   /* ---------- ganci ---------- */
   A.hooks.plan.push(planHTML);
+  homeBlockHTML.slot = 'mid'; sfHTML.slot = 'more'; sfHTML.rank = 1;
   A.hooks.home.push(homeBlockHTML);
   A.hooks.home.push(sfHTML);
 
@@ -343,7 +352,7 @@
     if (sf === 'on') { A.buzz(); sfSet(true); return true; }
     if (sf === 'arm') {
       S.sfArm = true; A.route(true);
-      clearTimeout(armTimer); armTimer = setTimeout(() => { if (S.sfArm) { S.sfArm = false; if (onHome()) A.route(true); } }, 3500);
+      clearTimeout(armTimer); armTimer = setTimeout(() => { if (S.sfArm) { S.sfArm = false; sfRefresh(); } }, 3500);
       return true;
     }
     if (sf === 'off') { clearTimeout(armTimer); A.buzz(); sfSet(false); return true; }
