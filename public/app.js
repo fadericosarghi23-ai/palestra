@@ -1218,8 +1218,8 @@ window.FitAccount.whenReady(function () {
     const a = tabs.querySelector('a[aria-current]');
     if (a) tabs.scrollLeft = a.offsetLeft - tabs.clientWidth / 2 + a.clientWidth / 2;
     const isDay = BASE_DAYS.some(d => d.id === cur);
-    const bkey = cur === TODAY_ID() ? 'oggi' : isDay ? 'settimana' : cur;
-    document.querySelectorAll('.bnav a').forEach(x => { if (x.dataset.k === bkey) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
+    const bkey = cur === TODAY_ID() ? 'oggi' : isDay ? 'settimana' : MORE_IDS.has(cur) || HK.views[cur] ? 'altro' : cur;
+    document.querySelectorAll('.bnav a, .bnav [data-k]').forEach(x => { if (x.dataset.k === bkey) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
   }
   function centerCalendar() {
     const cal = document.querySelector('.cal'), now = cal && (cal.querySelector('.wk.now') || cal.querySelector('.wk'));
@@ -1247,6 +1247,25 @@ window.FitAccount.whenReady(function () {
     HK.after.forEach(f => { try { f(id, main, day); } catch (e) { console.error('starfit+ modulo after', e); } });
   }
 
+  /* ---------- menu «Altro» (telefono): tutte le sezioni a due tocchi ---------- */
+  const MORE_IDS = new Set(['piano', 'esercizi', 'mobilita', 'costanza', 'progressi', 'watch', 'profilo']);
+  function moreItems() {
+    return [['piano', 'Piano e dieta', 'Progressione, test, calorie, regole'], ['esercizi', 'Tutti gli esercizi', n0(Object.keys(EX).length) + ' con video e spiegazione'],
+      ['mobilita', 'Mobilità', '10′ ogni giorno'], ['costanza', 'Costanza', 'Il calendario dei tuoi allenamenti'], ['progressi', 'Foto e misure', 'Ogni 4 settimane'],
+      ['watch', 'Apple Watch e promemoria', 'Scheda sul polso, calendario, notifiche'], ['profilo', 'Profilo', 'Altezza, peso, obiettivo']];
+  }
+  function toggleMore(open) {
+    let sh = document.getElementById('more-sheet'); const btn = document.querySelector('.bnav-more');
+    if (open === undefined) open = !sh;
+    if (!open) { if (sh) sh.remove(); if (btn) btn.setAttribute('aria-expanded', 'false'); return; }
+    if (sh) return;
+    const cur = (location.hash || '#').slice(1);
+    sh = document.createElement('div'); sh.id = 'more-sheet'; sh.className = 'more-sheet';
+    sh.innerHTML = `<div class="more-in" role="menu" aria-label="Altre sezioni">${moreItems().map(([id, t, d]) => `<a href="#${id}" role="menuitem"${cur === id ? ' aria-current="page"' : ''}><b>${esc(t)}</b><span>${esc(d)}</span><em>→</em></a>`).join('')}</div>`;
+    sh.addEventListener('click', e => { if (e.target === sh || e.target.closest('a')) toggleMore(false); });
+    document.body.appendChild(sh); if (btn) btn.setAttribute('aria-expanded', 'true');
+  }
+
   /* ---------- eventi ---------- */
   document.addEventListener('change', e => {
     if (someH('change', e)) return;
@@ -1256,6 +1275,7 @@ window.FitAccount.whenReady(function () {
     if (k) { if (e.target.checked) { done[k] = true; markTrained(k); } else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
   });
   document.addEventListener('submit', e => { onHeroSubmit(e); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleMore(false); });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     if (e.target.id === 'w-in') { e.preventDefault(); e.target.blur(); saveWeightFrom('w-in', dkey(new Date())); }
@@ -1275,6 +1295,7 @@ window.FitAccount.whenReady(function () {
     if (m) { const t = store.get('tests', {}); t[m[1] + '-' + m[2]] = e.target.value; store.set('tests', t); }
   });
   document.addEventListener('click', e => {
+    if (e.target.closest('.bnav-more')) { buzz(); toggleMore(); return; }
     if (someH('click', e)) return;
     if (onHeroClick(e)) return;
     if (onEditClick(e)) return;
@@ -1336,7 +1357,7 @@ window.FitAccount.whenReady(function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* niente */ }));
   }
   if (isStandalone()) document.documentElement.classList.add('standalone');
-  window.addEventListener('hashchange', () => { const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
+  window.addEventListener('hashchange', () => { toggleMore(false); const am = document.getElementById('acct-menu'); if (am) am.hidden = true; profMsg = ''; editing = null; swapFor = null; foodAdd = null; foodPick = null; foodNew = false; route(); });
   // Dati aggiornati da un altro dispositivo
   window.FitAccount.onRemote(() => {
     if ((store.get('program', 'terzino') || 'terzino') !== PROG.id && PROGRAMS[store.get('program', 'terzino')]) return location.reload();

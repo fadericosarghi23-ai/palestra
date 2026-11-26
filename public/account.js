@@ -74,7 +74,7 @@
     const since = S.doc.wxAt || 0, reset = S.doc.doneResetAt || 0;
     let max = since, ch = false;
     (wx.done || []).forEach(e => {
-      if (e.t > since) { if (e.t > reset) { S.doc.done = S.doc.done || {}; if (!S.doc.done[e.u]) { S.doc.done[e.u] = true; ch = true; } } max = Math.max(max, e.t); }
+      if (e.t > since) { if (e.t > reset) { S.doc.done = S.doc.done || {}; if (!S.doc.done[e.u]) { S.doc.done[e.u] = true; ch = true; } } if (e.d) { S.doc.trainedWx = S.doc.trainedWx || {}; S.doc.trainedWx[e.d] = true; } max = Math.max(max, e.t); }
     });
     Object.entries(wx.w || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.weights = S.doc.weights || {}; S.doc.weights[d] = v.kg; ch = true; max = Math.max(max, v.t); } });
     Object.entries(wx.act || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.watchAct = S.doc.watchAct || {}; const o = Object.assign({}, S.doc.watchAct[d] || {}); ['kcal', 'min', 'passi', 'fcr', 'sonno'].forEach(x => { if (v[x] != null) o[x] = v[x]; }); S.doc.watchAct[d] = o; ch = true; max = Math.max(max, v.t); } });
