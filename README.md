@@ -22,6 +22,9 @@ Funziona come app sull'iPhone: si installa sulla schermata Home e si apre anche 
 - partita la domenica o il sabato (scheda terzino): la settimana si riorganizza da sola
 - diario del peso giornaliero con grafico
 - diario del cibo: alimenti comuni con stima di calorie e macro, anche dall'etichetta, e consigli su cosa mangiare per completare la giornata
+- Apple Watch con Comandi rapidi: scheda di oggi, prossimo esercizio con Fatto e recupero, peso, dati della Salute ogni sera (pagina «Apple Watch» nel menu dell'account)
+- calendario degli allenamenti da iscrivere sull'iPhone, con avviso 1 ora prima
+- promemoria con notifiche (peso, allenamento, vigilia, mobilità, cibo), anche sull'orologio
 - registro dei test, alimentazione e regole
 
 Scheda modificata, serie fatte, peso, cibo, test e preferenze sono salvati nell'account. Senza rete si salvano sul telefono e partono appena torna la connessione.
@@ -43,7 +46,8 @@ public/                 il sito: è l'unica cartella pubblicata
   timer.js              timer di recupero e cronometro
   sw.js                 funzionamento offline
 lib/api-core.mjs        logica degli account (usata online e sul PC)
-netlify/functions/      funzione /api/* di Netlify
+lib/watch-core.mjs      comandi rapidi, calendario e notifiche
+netlify/functions/      funzione /api/* e promemoria ogni 15 minuti
 admin.mjs               creare e gestire gli account dal PC
 netlify.toml            configurazione di Netlify
 server.js               server per provarlo sul PC
@@ -97,3 +101,11 @@ node server.js
 ```
 
 Poi apri `http://localhost:8080`. Il server stampa anche l'indirizzo da usare sul telefono collegato alla stessa rete Wi-Fi. Gli account del PC sono salvati in `data/` e sono separati da quelli online.
+
+## Apple Watch e promemoria
+
+Nell'app: menu dell'account → **Apple Watch e promemoria**. Lì si crea il codice personale e ci sono le guide passo passo per i Comandi rapidi.
+
+- , , , , , , : tutti con .
+- I dati in arrivo dai comandi vanno in un archivio separato e l'app li unisce ai suoi quando si apre.
+- Le chiavi delle notifiche sono ricavate da : non serve configurare altro. Le notifiche su iPhone funzionano solo dall'app installata sulla schermata Home (iOS 16.4 o successivo).

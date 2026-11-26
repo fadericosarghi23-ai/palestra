@@ -66,15 +66,30 @@
       setStatus('offline');
     }
   }
+  /* Quello che arriva dall'Apple Watch e dai comandi rapidi (esercizi fatti, peso, attività):
+     si aggiunge ai dati dell'app, una volta sola per ogni voce. */
+  function applyWx(wx) {
+    if (!wx || !S.doc) return false;
+    const since = S.doc.wxAt || 0, reset = S.doc.doneResetAt || 0;
+    let max = since, ch = false;
+    (wx.done || []).forEach(e => {
+      if (e.t > since) { if (e.t > reset) { S.doc.done = S.doc.done || {}; if (!S.doc.done[e.u]) { S.doc.done[e.u] = true; ch = true; } } max = Math.max(max, e.t); }
+    });
+    Object.entries(wx.w || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.weights = S.doc.weights || {}; S.doc.weights[d] = v.kg; ch = true; max = Math.max(max, v.t); } });
+    Object.entries(wx.act || {}).forEach(([d, v]) => { if (v.t > since) { S.doc.watchAct = S.doc.watchAct || {}; S.doc.watchAct[d] = { kcal: v.kcal, min: v.min, passi: v.passi, fcr: v.fcr }; ch = true; max = Math.max(max, v.t); } });
+    if (max > since) { S.doc.wxAt = max; S.doc.localAt = Date.now(); S.dirty = true; saveLocal(); schedule(); }
+    return ch;
+  }
+  const remote = () => remoteCbs.forEach(f => { try { f(); } catch (e) { /* niente */ } });
   async function refresh() {
     if (!S.token) return;
     try {
       const r = await api('GET', '/me');
-      if (S.dirty) return push();
+      if (S.dirty) { if (applyWx(r.wx)) remote(); return push(); }
       if (r.data && JSON.stringify(r.data) !== JSON.stringify(S.doc)) {
-        S.doc = r.data; saveLocal();
-        remoteCbs.forEach(f => { try { f(); } catch (e) { /* niente */ } });
-      }
+        S.doc = r.data; saveLocal(); applyWx(r.wx);
+        remote();
+      } else if (applyWx(r.wx)) remote();
       setStatus('ok');
     } catch (e) {
       if (e.status === 401) return expired();
@@ -83,6 +98,8 @@
   }
   window.addEventListener('online', push);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') push(); else refresh(); });
+  // Mentre l'app è aperta, ogni 45″ controlla se dall'orologio è arrivato qualcosa
+  setInterval(() => { if (document.visibilityState === 'visible' && navigator.onLine !== false && isReady) refresh(); }, 45000);
 
   /* ---------- sessione ---------- */
   function ready() {
@@ -110,6 +127,7 @@
       const r = await api('GET', '/me');
       S.doc = r.data || migrateOld();
       if (!r.data) { S.dirty = true; schedule(); }
+      applyWx(r.wx);
       saveLocal(); ready();
     } catch (e) {
       if (e.status === 401) { clearSession(); return showAuth('La sessione è scaduta: accedi di nuovo.'); }
@@ -162,6 +180,7 @@
         LS.set('sf-token', r.token); LS.set('sf-user', r.user);
         S.doc = r.data || migrateOld();
         S.dirty = !r.data;
+        applyWx(r.wx);
         saveLocal();
         if (S.dirty) schedule();
         ready();
@@ -197,7 +216,8 @@
     whenReady(fn) { if (isReady) fn(); else readyCbs.push(fn); },
     onRemote(fn) { remoteCbs.push(fn); },
     user: () => S.user,
-    saveNow: push
+    saveNow: push,
+    api: (method, path, body) => api(method, path, body)
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

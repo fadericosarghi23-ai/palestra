@@ -35,7 +35,9 @@ function api(req, res) {
     let body = null;
     try { body = raw ? JSON.parse(raw) : null; } catch (e) { body = null; }
     const { handle } = await core;
-    const out = await handle({ method: req.method, path: req.url.split('?')[0].replace(/^\/api/, ''), headers: req.headers, body }, kv, { adminKey: adminKey() });
+    const u = new URL(req.url, 'http://localhost');
+    const out = await handle({ method: req.method, path: u.pathname.replace(/^\/api/, ''), headers: req.headers, body, query: Object.fromEntries(u.searchParams) }, kv, { adminKey: adminKey() });
+    if (out.text !== undefined) { res.writeHead(out.status, { 'Content-Type': out.type, 'Cache-Control': 'no-store' }); return res.end(out.text); }
     res.writeHead(out.status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(out.body));
   });

@@ -375,6 +375,7 @@ window.FitAccount.whenReady(function () {
     const R = [['facile', 'Facile'], ['giusto', 'Giusto'], ['duro', 'Duro']];
     return `<section class="panel diary" id="diary"><div class="f-mh"><h3>Diario dell'allenamento</h3><span>facoltativo</span></div>
       <p class="small">Com'è andata ${d.d.toLowerCase()} ${fmt(kdate(k), { day: 'numeric', month: 'short' })}? Carichi usati, sensazioni, cosa ti è piaciuto e cosa no. Se scrivi che un esercizio non ti piace ti propongo un'alternativa.</p>
+      ${watchActLine(k)}
       <div class="d-rate" role="group" aria-label="Com'è stato">${R.map(r => `<button type="button" data-rate="${r[0]}" aria-pressed="${!!cur && cur.r === r[0]}">${r[1]}</button>`).join('')}</div>
       <textarea id="d-text" rows="4" maxlength="1200" placeholder="Es. hip thrust 60 kg 4×10 facile, la prossima volta 62,5. Il box jump non mi piace.">${cur ? esc(cur.t || '') : ''}</textarea>
       <div class="f-act"><button type="button" class="sb-btn" id="d-save">${cur ? 'Aggiorna le note' : 'Salva le note'}</button>${cur ? '<span class="d-ok">Salvato ✓</span>' : ''}</div>
@@ -517,7 +518,7 @@ window.FitAccount.whenReady(function () {
     return `<section class="panel dark f-tot" id="f-tot"><div class="f-k"><b>${n0(t.k)}</b><span>kcal su ${n0(MAC.kcal[0])}–${n0(MAC.kcal[1])}</span></div>
       ${macroBar('Calorie', t.k, MAC.kcal, 'kcal').replace('class="mb', 'class="mb kcal')}
       ${macroBar('Proteine', t.p, MAC.p, 'g')}${macroBar('Carboidrati', t.c, MAC.c, 'g')}${macroBar('Grassi', t.f, MAC.f, 'g')}
-      <p class="f-msg">${msg}</p></section>`;
+      <p class="f-msg">${msg}</p>${watchActLine(foodDay || dkey(new Date())).replace('wt-act', 'wt-act on-dark')}</section>`;
   }
   /* Consigli: cosa mangiare per avvicinarsi agli obiettivi, in base al pasto dell'ora */
   const SUG = {
@@ -687,6 +688,162 @@ window.FitAccount.whenReady(function () {
     const v = forGrams(fd, g); p.textContent = n0(v.k) + ' kcal · P ' + n1(v.p) + ' g · C ' + n1(v.c) + ' g · G ' + n1(v.f) + ' g';
   }
 
+  /* ---------- Apple Watch: copia della scheda per i comandi rapidi, il calendario e i promemoria ---------- */
+  function syncWatch() {
+    const week = {};
+    days().forEach(d => {
+      week[d.id] = { label: d.label, title: d.title, type: d.type, dur: d.dur || '', md: d.md || '',
+        items: (d.items || []).filter(it => it.link || (it.ex && EX[it.ex])).map(it => ({ u: it.uid, n: it.link ? 'Mobilità quotidiana' : EX[it.ex].name, s: it.s || '', per: it.per || '', r: it.r || '', note: it.note || '' })) };
+    });
+    const snap = { v: 1, prog: PROG.id, start: dkey(START), end: dkey(END), deload: Array.from({ length: WEEKS }, (x, i) => i + 1).filter(n => n % 4 === 0),
+      tests: TEST_WEEKS.map(n => dkey(testDate(n))), matchday: MATCHDAY, week };
+    if (JSON.stringify(store.get('watch', null)) !== JSON.stringify(snap)) store.set('watch', snap);
+  }
+
+  const LSW = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* niente */ } } };
+  const codeKey = () => 'sf-wcode:' + (window.FitAccount.user() || '');
+  let wInfo = null, wLoading = false, pushState = null, pushMsg = '', wMsg = '';
+  const pushOK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.isSecureContext;
+  const API = (m, p, b) => window.FitAccount.api(m, p, b);
+  async function loadWatchInfo() {
+    if (wLoading) return; wLoading = true;
+    try { wInfo = await API('GET', '/watch/code'); } catch (e) { wInfo = { error: e.message }; }
+    try { pushState = await API('GET', '/push/state'); } catch (e) { pushState = { error: e.message }; }
+    wLoading = false;
+    if ((location.hash || '').slice(1) === 'watch') route(true);
+  }
+  const wUrl = (what, extra) => location.origin + '/api/w/' + what + '?k=' + (LSW.get(codeKey()) || 'IL-TUO-CODICE') + (extra || '');
+  const urlBox = (lbl, u) => `<div class="wt-url"><span>${esc(lbl)}</span><code>${esc(u)}</code><button type="button" class="btn-ghost wt-copy" data-copy="${esc(u)}">Copia</button></div>`;
+  const PUSH_LBL = { peso: ['Pesati', 'se non hai ancora segnato il peso'], allenamento: ['Allenamento di oggi', 'nei giorni di palestra, campo e partita'], vigilia: ['Vigilia della partita', 'la sera prima: niente fatica, carboidrati, sonno'], mobilita: ['Mobilità', 'i 10′ di ogni giorno'], cibo: ['Cosa hai mangiato', 'se oggi hai segnato meno di 3 alimenti'] };
+  function rings() {
+    if (PROG.id === 'glutei') return [['Movimento', '350–450 kcal', 'calorie attive al giorno: abbastanza per stare bene, senza consumare il muscolo che stai costruendo'], ['Esercizio', '30 min', 'le 3 palestre lo superano da sole; negli altri giorni basta una camminata veloce'], ['In piedi', '10–12 ore', 'alzati e muoviti 1′ ogni ora: aiuta anche schiena e postura'], ['Passi', '7.000–9.000', 'nei giorni di riposo: camminata di 20–40′'], ['Battito', 'zona 2', 'nelle camminate e nel cardio leggero: respiri bene e riesci a parlare']];
+    return [['Movimento', '700–850 kcal', 'calorie attive al giorno: con il deficit della dieta ti fa perdere grasso senza perdere esplosività'], ['Esercizio', '45–60 min', 'palestra e campo lo superano; nei giorni più leggeri basta la mobilità più 20′ di cyclette'], ['In piedi', '12 ore', 'il minimo per non stare fermo troppe ore'], ['Battito negli sprint', 'zona 4–5', 'nelle ripetute e nelle partenze; tra una e l\'altra recupera finché il battito scende in zona 2'], ['Recupero', 'FC a riposo', 'se al mattino è 5–7 battiti più alta del solito, oggi fai la seduta più leggera']];
+  }
+  function viewWatch() {
+    if (!wInfo && !wLoading) loadWatchInfo();
+    const code = LSW.get(codeKey()), host = location.host;
+    const codeHTML = code ? `<div class="wt-code"><code id="wt-code">${esc(code)}</code><button type="button" class="sb-btn" data-copy="${esc(code)}">Copia</button></div>
+        <p class="small">È la chiave dei tuoi comandi: chi ce l'ha può leggere la scheda e segnare esercizi e peso (non la password). Non condividerla.</p>
+        <button type="button" class="btn-ghost" id="wt-new">Crea un codice nuovo</button>`
+      : wInfo && wInfo.has ? `<p class="small">Hai già creato un codice il ${fmt(new Date(wInfo.created), { day: 'numeric', month: 'long' })}, ma non è su questo telefono. Puoi crearne uno nuovo: quello vecchio smette di funzionare e va cambiato nei comandi.</p><button type="button" class="sb-btn" id="wt-new">Crea un codice nuovo</button>`
+      : `<p class="small">Serve una volta sola: lo incolli nei comandi rapidi e da lì l'orologio parla con starfit+.</p><button type="button" class="sb-btn" id="wt-make">Crea il codice</button>`;
+    const ps = pushState || {}, prefs = ps.prefs || {};
+    const subHere = LSW.get('sf-push:' + (window.FitAccount.user() || ''));
+    const pushTop = !pushOK() ? '<p class="small wt-warn">Le notifiche funzionano solo dall\'app installata: apri starfit+ dall\'icona sulla schermata Home (iPhone con iOS 16.4 o successivo).</p>'
+      : ps.ready === false ? '<p class="small wt-warn">Le notifiche non sono ancora attive sul server.</p>'
+      : subHere ? '<p class="small wt-ok">Notifiche attive su questo telefono. Sull\'Apple Watch arrivano da sole quando l\'iPhone è bloccato.</p>'
+      : '<p class="small">Tocca «Attiva» e consenti le notifiche. Sull\'Apple Watch arrivano da sole quando l\'iPhone è bloccato.</p>';
+    const prefRows = Object.keys(PUSH_LBL).filter(k => k !== 'vigilia' || PROG.id === 'terzino').map(k => { const p = prefs[k] || {}; return `<label class="wt-pref"><input type="checkbox" data-pref="${k}"${p.on !== false ? ' checked' : ''}><span><b>${PUSH_LBL[k][0]}</b><small>${PUSH_LBL[k][1]}</small></span><input type="time" data-pref-at="${k}" value="${esc(p.at || '')}" aria-label="Orario: ${PUSH_LBL[k][0]}"></label>`; }).join('');
+    const step = a => `<ol class="wt-steps">${a.map(x => `<li>${x}</li>`).join('')}</ol>`;
+    const watchOn = 'Tocca <b>ⓘ</b> in basso e attiva <b>Mostra su Apple Watch</b>.';
+    const newSc = 'Apri <b>Comandi</b> sull\'iPhone e tocca <b>+</b> per un nuovo comando.';
+    return `<div class="dayhead"><div><div class="meta"><span class="chip act">Collegamenti</span></div>
+        <p class="big">Apple Watch</p><p class="sub">Comandi rapidi, calendario e promemoria</p>
+        <p class="goal">starfit+ non può stare dentro l'orologio, ma con <b>Comandi rapidi</b> (gratis, già sull'iPhone) lo usi dal polso: vedi la scheda, segni gli esercizi, fai partire il recupero e porti qui i dati del Watch.</p></div></div>
+      ${wMsg ? `<p class="wt-msg">${esc(wMsg)}</p>` : ''}
+      <section class="panel wt-sec"><h3>1 · Il tuo codice personale</h3>${wLoading && !wInfo ? '<p class="small">Carico…</p>' : codeHTML}</section>
+
+      <section class="panel wt-sec"><h3>2 · I comandi per l'orologio</h3>
+        <p class="small">Crea questi comandi una volta sola. Gli indirizzi qui sotto hanno già il tuo codice: tocca <b>Copia</b> e incollali.${code ? '' : ' <b>Prima crea il codice al punto 1.</b>'}</p>
+        <details class="how"><summary>Scheda di oggi <span>sul polso</span></summary>
+          <p class="small">Mostra l'allenamento del giorno con serie, recuperi e cosa hai già fatto.</p>
+          ${urlBox('Indirizzo', wUrl('oggi'))}
+          ${step([newSc, 'Aggiungi l\'azione <b>Ottieni contenuti dell\'URL</b> e incolla l\'indirizzo.', 'Aggiungi l\'azione <b>Mostra risultato</b>.', 'Tocca il nome in alto e chiamalo <b>Scheda di oggi</b>.', watchOn])}</details>
+        <details class="how"><summary>Prossimo esercizio <span>con Fatto e recupero</span></summary>
+          <p class="small">Ti dice l'esercizio da fare. Con <b>Fatto ✓</b> lo segni anche in starfit+, con <b>Recupero</b> parte il timer giusto sull'orologio.</p>
+          ${urlBox('Prossimo', wUrl('prossimo'))}${urlBox('Fatto', wUrl('fatto'))}${urlBox('Recupero', wUrl('recupero'))}
+          ${step([newSc, '<b>Ottieni contenuti dell\'URL</b> con l\'indirizzo <b>Prossimo</b>.', '<b>Scegli dal menu</b>: nella domanda inserisci la variabile <b>Contenuti dell\'URL</b>. Opzioni: <b>Fatto ✓</b>, <b>Recupero</b>, <b>Chiudi</b>.', 'Sotto <b>Fatto ✓</b>: <b>Ottieni contenuti dell\'URL</b> con l\'indirizzo <b>Fatto</b>, poi <b>Mostra risultato</b>.', 'Sotto <b>Recupero</b>: <b>Ottieni contenuti dell\'URL</b> con l\'indirizzo <b>Recupero</b>, poi <b>Avvia timer</b> e come durata inserisci <b>Contenuti dell\'URL</b> in <b>secondi</b>.', 'Chiamalo <b>Prossimo esercizio</b>. ' + watchOn])}
+          <p class="small">Poi basta dire: <b>«Ehi Siri, prossimo esercizio»</b>.</p></details>
+        <details class="how"><summary>Recupero veloce <span>senza codice</span></summary>
+          ${step([newSc, '<b>Scegli dal menu</b> con le opzioni <b>60″</b>, <b>90″</b>, <b>2′</b>, <b>3′</b>.', 'Sotto ogni opzione aggiungi <b>Avvia timer</b> con 60, 90, 120 o 180 secondi.', 'Chiamalo <b>Recupero</b>. ' + watchOn])}
+          <p class="small">Senza creare niente: <b>«Ehi Siri, timer 90 secondi»</b> dall'orologio.</p></details>
+        <details class="how"><summary>Segna il peso <span>dal polso</span></summary>
+          ${urlBox('Indirizzo', wUrl('peso', '&kg='))}
+          ${step([newSc, '<b>Richiedi input</b>: tipo <b>Numero</b>, domanda «Peso di oggi (kg)».', '<b>Ottieni contenuti dell\'URL</b>: incolla l\'indirizzo e subito dopo <b>kg=</b> inserisci la variabile <b>Input fornito</b>.', '<b>Mostra risultato</b>.', 'Chiamalo <b>Segna peso</b>. ' + watchOn])}
+          <p class="small">Il peso compare nel diario del peso, con la differenza rispetto a 7 giorni fa.</p></details>
+        <details class="how"><summary>Dati del Watch in starfit+ <span>automatico ogni sera</span></summary>
+          <p class="small">Ogni sera porta qui calorie attive, minuti di esercizio, passi e battito a riposo della giornata: li trovi nel diario dell'allenamento e nella pagina Cibo.</p>
+          ${urlBox('Indirizzo', wUrl('attivita', '&kcal=A&min=B&passi=C&fcr=D'))}
+          ${step(['In <b>Comandi</b> apri <b>Automazione</b> → <b>+</b> → <b>Ora del giorno</b>: 22:00, ogni giorno, <b>Esegui immediatamente</b>.', '<b>Trova campioni di Salute</b>: <b>Energia attiva</b>, data di inizio <b>oggi</b> → <b>Calcola statistiche</b>: <b>Somma</b>. È il valore A.', 'Ancora <b>Trova campioni di Salute</b>: <b>Minuti di esercizio</b>, oggi → <b>Somma</b>. È B.', 'Ancora: <b>Passi</b>, oggi → <b>Somma</b>. È C.', 'Ancora: <b>Frequenza cardiaca a riposo</b>, ordina per data dalla più recente, limite 1. È D.', '<b>Ottieni contenuti dell\'URL</b> con l\'indirizzo: al posto di A, B, C e D inserisci i quattro risultati.', 'La prima volta l\'iPhone chiede di leggere la Salute: consenti.'])}
+          <p class="small">Se tra le automazioni trovi <b>Allenamento Apple Watch</b>, puoi usare anche «quando termino un allenamento».</p></details>
+      </section>
+
+      <section class="panel wt-sec"><h3>3 · Sul quadrante</h3>
+        ${step(['Sull\'Apple Watch tieni premuto il quadrante e tocca <b>Modifica</b>.', 'Scorri fino alle complicazioni e tocca quella che vuoi cambiare.', 'Scegli <b>Comandi rapidi</b> → <b>Prossimo esercizio</b> (o <b>Recupero</b>).'])}
+        <p class="small">Così ti basta un tocco sul quadrante per aprire l'esercizio o far partire il recupero.</p></section>
+
+      <section class="panel wt-sec"><h3>4 · Calendario degli allenamenti</h3>
+        <p class="small">Le sedute fino al ${fmt(END, { day: 'numeric', month: 'long' })} nel Calendario dell'iPhone, con test e settimane di scarico. L'Apple Watch ti avvisa 1 ora prima. L'orario è quello del promemoria «Allenamento di oggi» qui sotto; se sposti la partita al sabato si aggiorna da solo.</p>
+        ${code ? `<a class="sb-btn wt-cal" href="webcal://${esc(host)}/api/w/calendario.ics?k=${esc(code)}">Iscriviti al calendario</a>${urlBox('Oppure copia', wUrl('calendario.ics'))}` : '<p class="small"><b>Prima crea il codice al punto 1.</b></p>'}
+        <p class="small">Se l'avviso non arriva: Impostazioni → Calendario → Account → Calendari sottoscritti → starfit+ → disattiva <b>Rimuovi avvisi</b>.</p></section>
+
+      <section class="panel wt-sec"><h3>5 · Promemoria</h3>
+        ${pushTop}${pushMsg ? `<p class="wt-msg">${esc(pushMsg)}</p>` : ''}
+        <div class="wt-prefs">${prefRows}</div>
+        <div class="f-act">${pushOK() ? (subHere ? '<button type="button" class="sb-btn" id="push-test">Manda una prova</button><button type="button" class="btn-ghost" id="push-off">Disattiva su questo telefono</button>' : '<button type="button" class="sb-btn" id="push-on">Attiva le notifiche</button>') : ''}</div></section>
+
+      <section class="panel wt-sec"><h3>6 · Con Siri</h3>
+        <ul class="list"><li>«Ehi Siri, <b>prossimo esercizio</b>» · «Ehi Siri, <b>scheda di oggi</b>»</li><li>«Ehi Siri, <b>segna peso</b>»</li><li>«Ehi Siri, <b>timer 90 secondi</b>»: funziona subito, senza comandi</li><li>«Ehi Siri, <b>avvia allenamento forza</b>»: il Watch registra battito e calorie della seduta</li></ul></section>
+
+      <section class="panel wt-sec"><h3>7 · Anelli e battito per la tua scheda</h3>
+        <div class="wt-rings">${rings().map(r => `<div class="wt-ring"><b>${esc(r[1])}</b><span>${esc(r[0])}</span><p>${esc(r[2])}</p></div>`).join('')}</div>
+        <p class="small">Gli obiettivi degli anelli si cambiano dall'app Fitness sull'iPhone: tocca il tuo profilo e poi <b>Cambia obiettivi</b>.</p></section>`;
+  }
+  function watchActLine(dk) {
+    const a = (store.get('watchAct', {}) || {})[dk];
+    if (!a) return '';
+    const parts = [a.kcal != null ? n0(a.kcal) + ' kcal attive' : '', a.min != null ? a.min + ' min di esercizio' : '', a.passi != null ? n0(a.passi) + ' passi' : '', a.fcr != null ? 'FC a riposo ' + a.fcr : ''].filter(Boolean);
+    return parts.length ? `<p class="wt-act">⌚ <b>Apple Watch</b> · ${parts.join(' · ')}</p>` : '';
+  }
+  async function copyText(t, btn) {
+    try { await navigator.clipboard.writeText(t); } catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (x) { /* niente */ } ta.remove(); }
+    if (btn) { const o = btn.textContent; btn.textContent = 'Copiato ✓'; setTimeout(() => { if (btn.isConnected) btn.textContent = o; }, 1600); }
+  }
+  const b64u = s => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+  function prefsFromPage() {
+    const o = {};
+    document.querySelectorAll('[data-pref]').forEach(c => { o[c.dataset.pref] = { on: c.checked, at: (document.querySelector('[data-pref-at="' + c.dataset.pref + '"]') || {}).value || '' }; });
+    if (PROG.id !== 'terzino') o.vigilia = { on: false, at: '20:30' };
+    return o;
+  }
+  let prefTimer = 0;
+  async function onWatchClick(e) {
+    const t = e.target;
+    const cp = t.closest('[data-copy]'); if (cp) { copyText(cp.dataset.copy, cp); return true; }
+    if (t.closest('#wt-make') || t.closest('#wt-new')) {
+      const b = t.closest('#wt-make, #wt-new');
+      if (b.id === 'wt-new' && b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Sicuro? Il vecchio codice smette di funzionare'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Crea un codice nuovo'; } }, 4000); return true; }
+      b.disabled = true;
+      try { const r = await API('POST', '/watch/code'); LSW.set(codeKey(), r.code); wInfo = { has: true, created: Date.now() }; wMsg = 'Codice creato. Ora crea i comandi qui sotto.'; buzz(); }
+      catch (x) { wMsg = 'Non riesco a creare il codice: ' + x.message; }
+      route(true); return true;
+    }
+    if (t.closest('#push-on')) {
+      pushMsg = '';
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') { pushMsg = 'Notifiche non consentite. Puoi attivarle in Impostazioni → Notifiche → starfit+.'; route(true); return true; }
+        const reg = await navigator.serviceWorker.ready, { key } = await API('GET', '/push/key');
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(key) });
+        await API('POST', '/push/sub', { sub: sub.toJSON(), prefs: prefsFromPage() });
+        LSW.set('sf-push:' + window.FitAccount.user(), sub.endpoint); pushMsg = 'Fatto: le notifiche sono attive.'; buzz();
+        pushState = await API('GET', '/push/state');
+      } catch (x) { pushMsg = 'Non riesco ad attivarle: ' + (x.message || x); }
+      route(true); return true;
+    }
+    if (t.closest('#push-test')) { try { await API('POST', '/push/test'); pushMsg = 'Inviata: tra qualche secondo arriva la notifica.'; } catch (x) { pushMsg = x.message; } route(true); return true; }
+    if (t.closest('#push-off')) {
+      try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) { await API('POST', '/push/off', { endpoint: sub.endpoint }); await sub.unsubscribe(); } } catch (x) { /* niente */ }
+      LSW.set('sf-push:' + window.FitAccount.user(), null); pushMsg = 'Notifiche disattivate su questo telefono.'; route(true); return true;
+    }
+    return false;
+  }
+  function onPrefChange() {
+    clearTimeout(prefTimer);
+    prefTimer = setTimeout(async () => { try { const r = await API('POST', '/push/prefs', { prefs: prefsFromPage() }); pushState = Object.assign({}, pushState, { prefs: r.prefs }); } catch (x) { /* riprova alla prossima modifica */ } }, 500);
+  }
+
   /* ---------- viste ---------- */
   function heroHTML() {
     return `<section class="hero"><div class="wrap">
@@ -847,6 +1004,7 @@ window.FitAccount.whenReady(function () {
     const rows = TEST_WEEKS.map((n, i) => (i === 0 ? 'Inizio' : 'Settimana ' + n) + ' · ' + fmt(testDate(n), { weekday: 'short', day: 'numeric', month: 'short' }));
     const PL = PROG.plan, colsT = PL.tests;
     return `<div class="sec-h"><div><h2>Piano e alimentazione</h2><p class="kicker">${esc(PL.intro)}</p></div></div>
+    <a class="mob-link wt-link" href="#watch"><div><b>⌚ Apple Watch e promemoria</b><br><span>Scheda sul polso, calendario, notifiche</span></div><em>Apri →</em></a>
     <div class="cols sec">
       <div class="panel dark"><h3>Blocchi da 4 settimane</h3>
         <div class="bars">
@@ -993,15 +1151,16 @@ window.FitAccount.whenReady(function () {
     if (cal && now && cal.scrollWidth > cal.clientWidth) cal.scrollLeft = Math.max(0, now.offsetLeft - cal.offsetLeft - 16);
   }
   function route(keep) {
+    syncWatch();
     let id = (location.hash || '').replace('#', '') || 'settimana';
     if (id === 'oggi') id = TODAY_ID();
     const day = dayById(id);
-    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano'].includes(id)) id = 'settimana';
+    if (!day && !['settimana', 'mobilita', 'cibo', 'esercizi', 'piano', 'watch'].includes(id)) id = 'settimana';
     renderTabs(id);
     const main = document.getElementById('main'), hero = document.getElementById('hero');
     unmount(main); unmount(hero);
     hero.innerHTML = id === 'settimana' ? heroHTML() : '';
-    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : viewHome();
+    main.innerHTML = day ? viewDay(day) : id === 'mobilita' ? viewMob() : id === 'esercizi' ? viewLib() : id === 'piano' ? viewPlan() : id === 'cibo' ? viewFood() : id === 'watch' ? viewWatch() : viewHome();
     mountFigures(hero); mountFigures(main);
     if (id === 'esercizi') applyLib();
     if (id === 'settimana') centerCalendar();
@@ -1012,6 +1171,7 @@ window.FitAccount.whenReady(function () {
 
   /* ---------- eventi ---------- */
   document.addEventListener('change', e => {
+    if (e.target.closest && e.target.closest('.wt-prefs')) return onPrefChange();
     if (e.target.closest && e.target.closest('#ed-list') && e.target.dataset.f) return onEditChange(e.target);
     const k = e.target.dataset && e.target.dataset.key;
     if (k) { if (e.target.checked) done[k] = true; else delete done[k]; store.set('done', done); e.target.closest('.ex').classList.toggle('is-done', e.target.checked); }
@@ -1036,6 +1196,7 @@ window.FitAccount.whenReady(function () {
   document.addEventListener('click', e => {
     if (onEditClick(e)) return;
     if (onFoodClick(e)) return;
+    if (e.target.closest('[data-copy], #wt-make, #wt-new, #push-on, #push-test, #push-off')) { onWatchClick(e); return; }
     const swb = e.target.closest('[data-swap]');
     if (swb) { swapFor = swb.dataset.swap || null; buzz(); route(true); const c = swapFor && document.querySelector('[data-swapto^="' + swapFor + '|"]'); if (c) c.closest('.alts').scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); return; }
     const st = e.target.closest('[data-swapto]');
@@ -1081,7 +1242,7 @@ window.FitAccount.whenReady(function () {
     if (f) { libFilter = f.dataset.cat; libShown = 24; document.querySelectorAll('.fchip').forEach(b => b.setAttribute('aria-pressed', b === f)); applyLib(); }
     if (e.target.closest('#lib-more')) { libShown += 24; applyLib(); }
     if (e.target.id === 'install-ok') { store.set('install-ok', true); const box = document.getElementById('install'); if (box) box.remove(); }
-    if (e.target.id === 'reset') { done = {}; setsDone = {}; store.set('done', done); store.set('sets', setsDone); route(); }
+    if (e.target.id === 'reset') { done = {}; setsDone = {}; store.set('done', done); store.set('sets', setsDone); store.set('doneResetAt', Date.now()); route(); }
   });
   const slow = document.getElementById('slow');
   const syncSlow = () => slow.setAttribute('aria-pressed', speed < 1);

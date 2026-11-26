@@ -25,7 +25,9 @@ export default async (req) => {
   }
   const headers = {};
   req.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
-  const res = await handle({ method: req.method, path: url.pathname.replace(/^\/api/, ''), headers, body }, kv, { adminKey: adminKey() });
+  const query = Object.fromEntries(url.searchParams);
+  const res = await handle({ method: req.method, path: url.pathname.replace(/^\/api/, ''), headers, body, query }, kv, { adminKey: adminKey() });
+  if (res.text !== undefined) return new Response(res.text, { status: res.status, headers: { 'Content-Type': res.type, 'Cache-Control': 'no-store' } });
   return new Response(JSON.stringify(res.body), {
     status: res.status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
