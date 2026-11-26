@@ -652,7 +652,7 @@ window.FitAccount.whenReady(function () {
       </section>`;
     }).join('');
     return `<div class="dayhead"><div><div class="meta"><span class="chip gym">Alimentazione</span></div>
-        <p class="big">Cibo</p><p class="sub">Cosa hai mangiato e i macro della giornata</p></div></div>
+        <p class="big">Pasti</p><p class="sub">Cosa hai mangiato e i macro della giornata</p></div></div>
       <nav class="f-days" aria-label="Giorno"><button type="button" data-fday="-1" aria-label="Giorno prima">←</button><b>${dayLbl}</b><button type="button" data-fday="1" aria-label="Giorno dopo"${isToday ? ' disabled' : ''}>→</button></nav>
       ${foodTotalsHTML(t)}
       ${runH('food', foodDay, t)}
@@ -789,7 +789,7 @@ window.FitAccount.whenReady(function () {
           ${step([newSc, '<b>Richiedi input</b>: tipo <b>Numero</b>, domanda «Peso di oggi (kg)».', '<b>Ottieni contenuti dell\'URL</b>: incolla l\'indirizzo e subito dopo <b>kg=</b> inserisci la variabile <b>Input fornito</b>.', '<b>Mostra risultato</b>.', 'Chiamalo <b>Segna peso</b>. ' + watchOn])}
           <p class="small">Il peso compare nel diario del peso, con la differenza rispetto a 7 giorni fa.</p></details>
         <details class="how"><summary>Dati del Watch in starfit+ <span>automatico ogni sera</span></summary>
-          <p class="small">Ogni sera porta qui calorie attive, minuti di esercizio, passi e battito a riposo della giornata: li trovi nel diario dell'allenamento e nella pagina Cibo.</p>
+          <p class="small">Ogni sera porta qui calorie attive, minuti di esercizio, passi e battito a riposo della giornata: li trovi nel diario dell'allenamento e nella pagina Pasti.</p>
           ${urlBox('Indirizzo', wUrl('attivita', '&kcal=A&min=B&passi=C&fcr=D'))}
           ${step(['In <b>Comandi</b> apri <b>Automazione</b> → <b>+</b> → <b>Ora del giorno</b>: 22:00, ogni giorno, <b>Esegui immediatamente</b>.', '<b>Trova campioni di Salute</b>: <b>Energia attiva</b>, data di inizio <b>oggi</b> → <b>Calcola statistiche</b>: <b>Somma</b>. È il valore A.', 'Ancora <b>Trova campioni di Salute</b>: <b>Minuti di esercizio</b>, oggi → <b>Somma</b>. È B.', 'Ancora: <b>Passi</b>, oggi → <b>Somma</b>. È C.', 'Ancora: <b>Frequenza cardiaca a riposo</b>, ordina per data dalla più recente, limite 1. È D.', '<b>Ottieni contenuti dell\'URL</b> con l\'indirizzo: al posto di A, B, C e D inserisci i quattro risultati.', 'La prima volta l\'iPhone chiede di leggere la Salute: consenti.'])}
           <p class="small">Se tra le automazioni trovi <b>Allenamento Apple Watch</b>, puoi usare anche «quando termino un allenamento».</p></details>
@@ -959,7 +959,7 @@ window.FitAccount.whenReady(function () {
   function viewToday() {
     const u = window.FitAccount.user() || '', name = u.charAt(0).toUpperCase() + u.slice(1), cw = currentWeek();
     const t = sumFood(dayFood(dkey(new Date()))), mac = macrosFor(dkey(new Date()));
-    const foodCard = `<a class="sec panel oggi-food" href="#cibo"><div><b>Cibo di oggi</b><span>${t.k ? n0(t.k) + ' kcal su ' + n0(mac.kcal[0]) + ' · proteine ' + n0(t.p) + ' / ' + n0(mac.p[0]) + ' g' : 'Ancora niente segnato · obiettivo ' + n0(mac.kcal[0]) + ' kcal'}</span></div><em>Apri →</em></a>`;
+    const foodCard = `<a class="sec panel oggi-food" href="#cibo"><div><b>Pasti di oggi</b><span>${t.k ? n0(t.k) + ' kcal su ' + n0(mac.kcal[0]) + ' · proteine ' + n0(t.p) + ' / ' + n0(mac.p[0]) + ' g' : 'Ancora niente segnato · obiettivo ' + n0(mac.kcal[0]) + ' kcal'}</span></div><em>Apri →</em></a>`;
     return installHTML() + `<header class="oggi-h"><p class="oggi-k">${esc(fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }))}${cw >= 1 && cw <= WEEKS ? ' · settimana ' + cw + ' di ' + WEEKS : ''}</p><h1 class="oggi-t">Ciao ${esc(name)}</h1></header>
       <section class="sec">${todayHTML()}</section>${homeH('top')}<div class="sec home-duo">${weightHTML('home')}${homeH('duo')}</div>${foodCard}${homeH('mid')}`;
   }
@@ -1228,7 +1228,7 @@ window.FitAccount.whenReady(function () {
   }
 
   /* ---------- router ---------- */
-  const TABS = [['oggi', 'Oggi'], ['settimana', 'Allenamento'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['esercizi', 'Esercizi'], ['mobilita', 'Mobilità'], ['cibo', 'Cibo'], ['io', 'Io']]);
+  const TABS = [['oggi', 'Oggi'], ['settimana', 'Allenamento'], 'sep'].concat(BASE_DAYS.map(d => [d.id, d.d.slice(0, 3)]), ['sep', ['esercizi', 'Esercizi'], ['mobilita', 'Mobilità'], ['cibo', 'Pasti'], ['io', 'Io']]);
   function renderTabs(cur) {
     const tabs = document.getElementById('tabs');
     tabs.innerHTML = TABS.map(t => t === 'sep' ? '<span class="sep"></span>' : `<a href="#${t[0]}"${t[0] === cur ? ' aria-current="page"' : ''}>${t[1]}</a>`).join('');
@@ -1270,7 +1270,7 @@ window.FitAccount.whenReady(function () {
   const MORE_IDS = new Set([...IO_IDS, ...TRAIN_IDS]);
   function moreGroups() {
     return [
-      ['Ogni giorno', [['oggi', 'Oggi', 'La tua giornata'], ['cibo', 'Cibo', 'Cosa mangi e i macro']]],
+      ['Ogni giorno', [['oggi', 'Oggi', 'La tua giornata'], ['cibo', 'Pasti', 'Cosa mangi e i macro']]],
       ['Allenamento', [['settimana', 'La settimana', 'Giorni e calendario'], ['esercizi', 'Tutti gli esercizi', n0(Object.keys(EX).length) + ' con video'], ['mobilita', 'Mobilità', '10′ ogni giorno']]],
       ['I tuoi progressi', [['io', 'Io', 'Riepilogo, costanza, sfida'], ['costanza', 'Costanza', 'Un pallino per ogni giorno'], ['progressi', 'Foto e misure', 'Ogni 4 settimane'], ['piano', 'Piano e dieta', 'Peso, test, calorie, regole']]],
       ['Impostazioni', [['watch', 'Apple Watch e promemoria', 'Scheda sul polso, notifiche'], ['profilo', 'Profilo', 'Altezza, peso, obiettivo']]]

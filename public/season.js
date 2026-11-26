@@ -299,7 +299,7 @@
     let body;
     if (!data) body = `<p class="small">${errMsg || 'Carico la classifica…'}</p>`;
     else if (!data.on) {
-      body = `<p>Sfida della costanza con gli altri di starfit+: 3 punti per ogni giorno di allenamento, 1 per il peso, 1 per il cibo segnato, 1 per l'acqua. Si vedono solo i punti, mai i tuoi dati.</p>
+      body = `<p>Sfida della costanza con gli altri di starfit+: 3 punti per ogni giorno di allenamento, 1 per il peso, 1 per i pasti segnati, 1 per l'acqua. Si vedono solo i punti, mai i tuoi dati.</p>
         <div class="f-act"><button type="button" class="sb-btn" data-sfida="on"${S.sfBusy ? ' disabled' : ''}>${S.sfBusy ? 'Un attimo…' : 'Partecipa'}</button></div>
         ${errMsg ? `<p class="small">${errMsg}</p>` : ''}`;
     } else {

@@ -29,7 +29,7 @@
     ['kg', 'Progressi', 'Carichi e record', 'A ogni serie scrivi kg e ripetizioni: la volta dopo ti dico che carico usare. I record e il grafico dei progressi compaiono da soli.'],
     ['✓', 'Ogni mattina', 'Come stai oggi?', 'Tre tocchi: sonno, energia e dolori. Se sei stanco o hai male, ti propongo la versione leggera della seduta.'],
     ['⇄', 'Corpo', 'Foto e misure', ter ? 'Ogni 4 settimane foto e misure (vita, petto…): vedi come cambi davvero. Le foto restano solo sul tuo iPhone.' : 'Ogni 4 settimane foto e misure (fianchi, cosce…): vedi come cambia il corpo, non solo il peso. Le foto restano solo sul tuo iPhone.'],
-    ['↺', 'Cibo', 'Codice a barre e preferiti', 'Inquadri l\'etichetta e i valori arrivano da soli. Poi pasti preferiti, «Ripeti ieri», lista della spesa e acqua. Gli obiettivi cambiano con il tipo di giorno.'],
+    ['↺', 'Pasti', 'Codice a barre e preferiti', 'Inquadri l\'etichetta e i valori arrivano da soli. Poi pasti preferiti, «Ripeti ieri», lista della spesa e acqua. Gli obiettivi cambiano con il tipo di giorno.'],
     ['⌚', 'Apple Watch', 'Dal polso', 'Scheda di oggi, prossimo esercizio, recupero, peso, calendario e promemoria. La trovi nel menu (il logo al centro, in basso) → Apple Watch.', '#watch', 'Apri la pagina Apple Watch →'],
     ['★', 'Insieme', 'Sfida della settimana', 'Una sfida della costanza con gli altri di starfit+: punti per allenamenti, peso, cibo e acqua. Si vedono solo i punti. La trovi nella pagina Io.']
   ];
